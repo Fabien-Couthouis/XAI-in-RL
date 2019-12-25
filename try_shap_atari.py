@@ -9,8 +9,9 @@ from stable_baselines import PPO2
 
 obs_path = os.path.join(
     "observations", "BreakoutNoFrameskip-v4-Sun Dec 22 11:32:52 2019.pkl")
-observations = np.array(joblib.load(obs_path))
+observations = joblib.load(obs_path)
 
+print(observations[0].reshape(-1, 2).shape)
 num_env = 1
 env_name = 'BreakoutNoFrameskip-v4'
 obs_folder = "observations"
@@ -20,19 +21,33 @@ env = VecFrameStack(env, n_stack=4)
 # %%Load pre-trained agent
 model_path = os.path.join("pre-trained models", f"{env_name}.pkl")
 MODEL = PPO2.load(model_path)
+MODEL =MODEL.act_model.
 
 
-def predict_many_examples(X):
+def predict_many_examples(observations):
+    # if observations.shape != (-1, 84, 84, 4):
+    #     observations = observations.reshape(-1, 84, 84, 4)
     outputs = []
-    for example in X:
+    for example in observations:
         pred = MODEL.predict(example)[0]
         outputs.append(pred)
     return np.array(outputs)
 
 
-# explain predictions of the model on four images
-explainer = shap.KernelExplainer(
-    predict_many_examples, shap.sample(observations))
+def reshape_obs(observations):
+    new = []
+    for observation in observations:
+        # print("pre", observation)
+        new.append(observation)
+        # print("post", observation)
 
-shap.summary_plot(explainer, shap.sample(observations))
-# shap_values = explainer.shap_values(shap.sample(observations))
+    new = np.array(new).reshape(-1, 2)
+
+    print("shape", new.shape)
+    return np.array(new)
+
+
+explainer = shap.SamplingExplainer(
+    predict_many_examples, np.zeros((100,84,84,4)))
+shap_values = explainer.explain(shap.sample(observations))
+print(shap_values)

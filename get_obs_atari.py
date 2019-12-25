@@ -8,18 +8,18 @@ from stable_baselines import PPO2
 from time import ctime
 
 
-#Make env (from stable baselines doc)
+# Make env (from stable baselines doc)
 num_env = 1
 env_name = 'BreakoutNoFrameskip-v4'
 obs_folder = "observations"
 env = make_atari_env(env_name, num_env=num_env, seed=0)
 env = VecFrameStack(env, n_stack=4)
 
-#Load pre-trained agent
+# Load pre-trained agent
 model_path = os.path.join("pre-trained models", f"{env_name}.pkl")
 model = PPO2.load(model_path)
 
-#Play with pre-trained agent to collect observations
+# Play with pre-trained agent to collect observations
 nb_episodes = 5
 finished_games = 0
 max_num_steps = 1000
