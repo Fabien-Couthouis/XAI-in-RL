@@ -1,5 +1,6 @@
 from multiagent.environment import MultiAgentEnv
 import multiagent.scenarios as scenarios
+from multiagent.scenarios.simple_tag import random_action
 import numpy as np
 from gym import spaces
 
@@ -12,10 +13,10 @@ class EnvWrapper(MultiAgentEnv):
         # create multiagent environment
         if benchmark:
             super().__init__(world, scenario.reset_world, scenario.reward,
-                             scenario.observation, scenario.benchmark_data)
+                             scenario.observation, scenario.benchmark_data, done_callback=scenario.episode_over)
         else:
             super().__init__(world, scenario.reset_world,
-                             scenario.reward, scenario.observation)
+                             scenario.reward, scenario.observation, done_callback=scenario.episode_over)
 
     def get_num_of_agents(self):
         return self.n
@@ -56,8 +57,14 @@ class EnvWrapper(MultiAgentEnv):
         return act_shapes
 
     def get_random_actions(self):
-        'Return: list of random actions for each agent'
+        'Return: list of random actions for each agent '
         agents_actions = []
+
+        # (simple tag scenario only) does not work this way
+        # for agent in self.agents:
+        #     action = random_action(agent, self.world)
+        #     agents_actions.append(action)
+
         for i in range(self.get_num_of_agents()):
             # Discrete: https://github.com/openai/gym/blob/master/gym/spaces/discrete.py
             agent_action_space = self.action_space[i]

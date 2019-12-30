@@ -2,10 +2,7 @@ import numpy as np
 import gfootball.env as football_env
 from gfootball.env.players.ppo2_cnn import Player
 
-players = []
-players.append(
-    "ppo2_cnn:right_players=1,policy=gfootball_impala_cnn,checkpoint=CP_11_vs_11_easy_stochastic_v2")
-
+players = ["ppo2_cnn:right_players=1,policy=gfootball_impala_cnn,checkpoint=CP_11_vs_11_easy_stochastic_v2"]
 env = football_env.create_environment(env_name='11_vs_11_stochastic', render=True,
                                       stacked=False, number_of_left_players_agent_controls=1, extra_players=players)
 

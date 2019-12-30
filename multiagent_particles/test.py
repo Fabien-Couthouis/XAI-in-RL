@@ -5,14 +5,16 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description='Test rl agent.')
-parser.add_argument('--save-model-dir', type=str, nargs='?', default='./model_save/', help='Please input the directory of saving model.')
-parser.add_argument('--render', action='store_true', help='Please input the flag to control the render.')
-parser.add_argument('--episodes', type=int, default=10, help='Please input the number of test episodes')
+parser.add_argument('--save-model-dir', type=str, nargs='?',
+                    default='./model_save/', help='Please input the directory of saving model.')
+parser.add_argument('--render', action='store_true',
+                    help='Please input the flag to control the render.')
+parser.add_argument('--episodes', type=int, default=10,
+                    help='Please input the number of test episodes')
 
 argv = parser.parse_args()
 
 model = Model[model_name]
-
 strategy = Strategy[model_name]
 
 if argv.save_model_dir[-1] is '/':
@@ -28,7 +30,8 @@ if args.target:
 else:
     behaviour_net = model(args)
 
-checkpoint = torch.load(PATH, map_location='cpu') if not args.cuda else torch.load(PATH)
+checkpoint = torch.load(
+    PATH, map_location='cpu') if not args.cuda else torch.load(PATH)
 behaviour_net.load_state_dict(checkpoint['model_state_dict'])
 
 if strategy == 'pg':
