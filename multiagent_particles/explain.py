@@ -97,7 +97,7 @@ def get_combinations(features):
     return combinations_list
 
 
-def get_coalition_values(env, features, num_episodes):
+def get_coalition_values(env, features, num_episodes, behaviour_net):
     coalition_values = dict()
     for coalition in get_combinations(features):
         total_rewards = play(env, coalition=coalition,
@@ -108,10 +108,11 @@ def get_coalition_values(env, features, num_episodes):
     return coalition_values
 
 
-def shapley_values(env, num_episodes=10):
+def shapley_values(env, behaviour_net, num_episodes=10):
     'Naive implementation (not optimized at all)'
     agents_ids = range(env.get_num_of_agents())
-    coalition_values = get_coalition_values(env, agents_ids, num_episodes)
+    coalition_values = get_coalition_values(
+        env, agents_ids, num_episodes, behaviour_net)
     shapley_values = []
     for agent_id in agents_ids:
         if DEBUG:
@@ -157,4 +158,5 @@ if __name__ == "__main__":
     model_path = "model_save/simple_tag_maddpg/model.pt"
     behaviour_net = load_model(model_path)
 
-    print(shapley_values(env, num_episodes=100))
+    print("Shapley values for each agent: ",
+          shapley_values(env, behaviour_net, num_episodes=100))
