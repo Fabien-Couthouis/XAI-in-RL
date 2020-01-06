@@ -6,16 +6,22 @@ from multiagent.core import World, Agent, Landmark, Action
 from multiagent.scenario import BaseScenario
 
 # By Yuan Zhang:
-def random_action(agent,world):
+
+
+def random_action(agent, world):
     action = Action()
     action.u = np.zeros(world.dim_p)
     action.c = np.zeros(world.dim_c)
     random_action = np.random.choice(5)
     # process discrete action
-    if random_action == 1: action.u[0] = -1.0
-    if random_action == 2: action.u[0] = +1.0
-    if random_action == 3: action.u[1] = -1.0
-    if random_action == 4: action.u[1] = +1.0
+    if random_action == 1:
+        action.u[0] = -1.0
+    if random_action == 2:
+        action.u[0] = +1.0
+    if random_action == 3:
+        action.u[1] = -1.0
+    if random_action == 4:
+        action.u[1] = +1.0
 
     # accel of prey
     sensitivity = 5.0
@@ -23,6 +29,7 @@ def random_action(agent,world):
         sensitivity = agent.accel
     action.u *= sensitivity
     return action
+
 
 class Scenario(BaseScenario):
     def make_world(self):
@@ -43,9 +50,9 @@ class Scenario(BaseScenario):
             agent.silent = True
             agent.adversary = True if i < num_adversaries else False
             agent.size = 0.075 if agent.adversary else 0.05
-            agent.accel = 3.0 if agent.adversary else 4.0 # 3.0 4.0
+            agent.accel = 3.0 if agent.adversary else 4.0  # 3.0 4.0
             #agent.accel = 20.0 if agent.adversary else 25.0
-            agent.max_speed = 1.0 if agent.adversary else 1.3 # 1.0 1.3
+            agent.max_speed = 1.0 if agent.adversary else 1.3  # 1.0 1.3
             # By Yuan Zhang:
             agent.action_callback = random_action if not agent.adversary else None
 
@@ -55,19 +62,19 @@ class Scenario(BaseScenario):
             landmark.name = 'landmark %d' % i
             landmark.collide = True
             landmark.movable = False
-            landmark.size = 0.2 # 0.2
+            landmark.size = 0.2  # 0.2
             landmark.boundary = False
         # make initial conditions
         self.reset_world(world)
         self.done = False
         return world
 
-
     def reset_world(self, world):
         self.done = False
         # random properties for agents
         for i, agent in enumerate(world.agents):
-            agent.color = np.array([0.35, 0.85, 0.35]) if not agent.adversary else np.array([0.85, 0.35, 0.35])
+            if not agent.adversary:
+                agent.color = np.array([0.35, 0.85, 0.35])
             # random properties for landmarks
         for i, landmark in enumerate(world.landmarks):
             landmark.color = np.array([0.25, 0.25, 0.25])
@@ -78,9 +85,9 @@ class Scenario(BaseScenario):
             agent.state.c = np.zeros(world.dim_c)
         for i, landmark in enumerate(world.landmarks):
             if not landmark.boundary:
-                landmark.state.p_pos = np.random.uniform(-0.9, +0.9, world.dim_p)
+                landmark.state.p_pos = np.random.uniform(
+                    -0.9, +0.9, world.dim_p)
                 landmark.state.p_vel = np.zeros(world.dim_p)
-
 
     def benchmark_data(self, agent, world):
         # returns data for benchmarking purposes
@@ -92,7 +99,6 @@ class Scenario(BaseScenario):
             return collisions
         else:
             return 0
-
 
     def is_collision(self, agent1, agent2):
         delta_pos = agent1.state.p_pos - agent2.state.p_pos
@@ -108,10 +114,10 @@ class Scenario(BaseScenario):
     def adversaries(self, world):
         return [agent for agent in world.agents if agent.adversary]
 
-
     def reward(self, agent, world):
         # Agents are rewarded based on minimum agent distance to each landmark
-        main_reward = self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
+        main_reward = self.adversary_reward(
+            agent, world) if agent.adversary else self.agent_reward(agent, world)
         return main_reward
 
     def agent_reward(self, agent, world):
@@ -119,9 +125,11 @@ class Scenario(BaseScenario):
         rew = 0
         shape = False
         adversaries = self.adversaries(world)
-        if shape:  # reward can optionally be shaped (increased reward for increased distance from adversary)
+        # reward can optionally be shaped (increased reward for increased distance from adversary)
+        if shape:
             for adv in adversaries:
-                rew += 0.1 * np.sqrt(np.sum(np.square(agent.state.p_pos - adv.state.p_pos)))
+                rew += 0.1 * \
+                    np.sqrt(np.sum(np.square(agent.state.p_pos - adv.state.p_pos)))
         if agent.collide:
             for a in adversaries:
                 if self.is_collision(a, agent):
@@ -134,7 +142,7 @@ class Scenario(BaseScenario):
             if x < 1.0:
                 return (x - 0.9) * 10
             return min(np.exp(2 * x - 2), 10)
-            
+
         for p in range(world.dim_p):
             x = abs(agent.state.p_pos[p])
             rew -= bound(x)
@@ -144,12 +152,15 @@ class Scenario(BaseScenario):
     def adversary_reward(self, agent, world):
         # Adversaries are rewarded for collisions with agents
         rew = 0
-        shape = True # False
+        shape = True  # False
         agents = self.good_agents(world)
         adversaries = self.adversaries(world)
-        if shape:  # reward can optionally be shaped (decreased reward for increased distance from agents)
+        # reward can optionally be shaped (decreased reward for increased distance from agents)
+        if shape:
             for adv in adversaries:
-                rew -= 0.1 * min([np.sqrt(np.sum(np.square(a.state.p_pos - adv.state.p_pos))) for a in agents])
+                rew -= 0.1 * \
+                    min([np.sqrt(np.sum(np.square(a.state.p_pos - adv.state.p_pos)))
+                         for a in agents])
         if agent.collide:
             for ag in agents:
                 for adv in adversaries:
@@ -169,7 +180,8 @@ class Scenario(BaseScenario):
         other_pos = []
         other_vel = []
         for other in world.agents:
-            if other is agent: continue
+            if other is agent:
+                continue
             comm.append(other.state.c)
             other_pos.append(other.state.p_pos - agent.state.p_pos)
             if not other.adversary:

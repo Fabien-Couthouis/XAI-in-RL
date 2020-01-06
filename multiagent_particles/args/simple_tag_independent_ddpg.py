@@ -6,7 +6,6 @@ import numpy as np
 from aux import *
 
 
-
 '''define the model name'''
 model_name = 'independent_ddpg'
 
@@ -25,7 +24,8 @@ scenario = scenario.load(scenario_name+".py").Scenario()
 world = scenario.make_world()
 
 '''create multiagent environment'''
-env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None, shared_viewer=True,done_callback=scenario.episode_over)
+env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation,
+                    info_callback=None, shared_viewer=True, done_callback=scenario.episode_over)
 env = GymWrapper(env)
 
 MergeArgs = namedtuple('MergeArgs', Args._fields+AuxArgs[model_name]._fields)
@@ -48,7 +48,7 @@ args = Args(model_name=model_name,
             entr_inc=0.0,
             action_num=np.max(env.get_input_shape_of_act()),
             q_func=False,
-            train_episodes_num=int(5e3),
+            train_episodes_num=int(1500),
             replay=True,
             replay_buffer_size=1e4,
             replay_warmup=0,
@@ -65,7 +65,7 @@ args = Args(model_name=model_name,
             online=True,
             reward_record_type='episode_mean_step',
             shared_parameters=False
-           )
+            )
 
 args = MergeArgs(*(args+aux_args))
 

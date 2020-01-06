@@ -32,9 +32,9 @@ def load_model(path):
     return behaviour_net
 
 
-def take_action(behaviour_net, env, state, last_action):
+def take_action(behaviour_nets, env, state, last_action):
     'Return: list of actions corresponding to each agent'
-    if behaviour_net is None:
+    if behaviour_nets is None:
         actions = env.get_random_actions()
         return actions
 
@@ -46,15 +46,22 @@ def take_action(behaviour_net, env, state, last_action):
     state = cuda_wrapper(prep_obs(state).contiguous().view(
         1, args.agent_num, args.obs_size), cuda=cuda)
 
-    action_logits = behaviour_net.policy(
-        state, schedule=None, last_act=last_action, last_hid=None, info={})
-    action = select_action(args, action_logits, status='test')
+    actions = []
+    i = 0
+    num_models = len(behaviour_nets)
+    while len(actions) < 3:
+        action_logits = behaviour_nets[i % num_models].policy(
+            state, schedule=None, last_act=last_action, last_hid=None, info={})
+        action = select_action(args, action_logits, status='test')
 
-    _, actual = translate_action(args, action, env)
-    return actual
+        _, actual = translate_action(args, action, env)
+        actions.append(actual[i])
+        i += 1
+
+    return actions
 
 
-def play(env, coalition=None, behaviour_net=None, num_episodes=2000, max_steps_per_episode=500, render=True):
+def play(env, coalition=None, behaviour_nets=None, num_episodes=2000, max_steps_per_episode=500, render=True):
     actions = None
     total_rewards = []
 
@@ -65,9 +72,9 @@ def play(env, coalition=None, behaviour_net=None, num_episodes=2000, max_steps_p
         for step in range(max_steps_per_episode):
             if coalition is not None:
                 actions = take_actions_for_coalition(
-                    coalition, behaviour_net, env, observations, actions)
+                    coalition, behaviour_nets, env, observations, actions)
             else:
-                actions = take_action(behaviour_net, env,
+                actions = take_action(behaviour_nets, env,
                                       observations, actions)
 
             observations, rewards, dones, info = env.step(actions)
@@ -97,22 +104,22 @@ def get_combinations(features):
     return combinations_list
 
 
-def get_coalition_values(env, features, num_episodes, behaviour_net):
+def get_coalition_values(env, features, num_episodes, behaviour_nets):
     coalition_values = dict()
     for coalition in get_combinations(features):
         total_rewards = play(env, coalition=coalition,
-                             behaviour_net=behaviour_net, num_episodes=num_episodes, render=False)
+                             behaviour_nets=behaviour_nets, num_episodes=num_episodes, render=False)
         coalition_values[str(coalition)] = round(mean(total_rewards), 2)
     if DEBUG:
         print("Coalition values: ", coalition_values)
     return coalition_values
 
 
-def shapley_values(env, behaviour_net, num_episodes=10):
+def shapley_values(env, behaviour_nets, num_episodes=10):
     'Naive implementation (not optimized at all)'
     agents_ids = range(env.get_num_of_agents())
     coalition_values = get_coalition_values(
-        env, agents_ids, num_episodes, behaviour_net)
+        env, agents_ids, num_episodes, behaviour_nets)
     shapley_values = []
     for agent_id in agents_ids:
         if DEBUG:
@@ -142,9 +149,9 @@ def shapley_values(env, behaviour_net, num_episodes=10):
     return np.divide(shapley_values, np.math.factorial(env.get_num_of_agents()))
 
 
-def take_actions_for_coalition(coalition, behaviour_net, env, state, last_action):
+def take_actions_for_coalition(coalition, behaviour_nets, env, state, last_action):
     'Return actions where each agent in coalition follow the policy, others play at random'
-    actions = take_action(behaviour_net, env, state, last_action)
+    actions = take_action(behaviour_nets, env, state, last_action)
     random_actions = env.get_random_actions()
 
     for agent_id in coalition:
@@ -155,8 +162,20 @@ def take_actions_for_coalition(coalition, behaviour_net, env, state, last_action
 
 if __name__ == "__main__":
     env = EnvWrapper("simple_tag")
-    model_path = "model_save/simple_tag_maddpg/model.pt"
-    behaviour_net = load_model(model_path)
+    env.world.entities[0].color = [0.0, 0.0, 1.0]
+    env.world.entities[1].color = [1.0, 0.0, 0.0]
+    env.world.entities[2].color = [0.0, 1.0, 0.0]
 
-    print("Shapley values for each agent: ",
-          shapley_values(env, behaviour_net, num_episodes=100))
+    model_path_good = "model_save/simple_tag_independent_ddpg_good/model.pt"
+    model_path_medium = "model_save/simple_tag_independent_ddpg_medium/model.pt"
+    model_path_bad = "model_save/simple_tag_independent_ddpg_bad/model.pt"
+
+    behaviour_nets = [load_model(model_path_good), load_model(
+        model_path_medium), load_model(
+        model_path_bad)]
+    play(env, behaviour_nets=behaviour_nets, num_episodes=100)
+
+    # for i in range(5):
+    #     print(i)
+    #     print("Shapley values for each agent: ",
+    #           shapley_values(env, behaviour_nets, num_episodes=500), "\n")

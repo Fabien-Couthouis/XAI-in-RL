@@ -7,14 +7,14 @@ from aux import *
 
 
 '''define the model name'''
-model_name = 'sqddpg'
+model_name = 'maddpg'
 
 '''define the scenario name'''
 scenario_name = 'simple_tag'
 
 '''define the special property'''
-# sqddpgArgs = namedtuple( 'sqddpgArgs', ['sample_size'] )
-aux_args = AuxArgs[model_name](1)
+# maddpgArgs = namedtuple( 'maddpgArgs', [] )
+aux_args = AuxArgs[model_name]()
 alias = ''
 
 '''load scenario from script'''
@@ -48,7 +48,7 @@ args = Args(model_name=model_name,
             entr_inc=0.0,
             action_num=np.max(env.get_input_shape_of_act()),
             q_func=True,
-            train_episodes_num=int(3e3),
+            train_episodes_num=int(5e3),
             replay=True,
             replay_buffer_size=1e4,
             replay_warmup=0,
