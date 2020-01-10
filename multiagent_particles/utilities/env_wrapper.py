@@ -6,10 +6,10 @@ from gym import spaces
 
 
 class EnvWrapper(MultiAgentEnv):
-    def __init__(self, scenario_name, benchmark=False):
+    def __init__(self, scenario_name, benchmark=False, random_prey=True):
         scenario = scenarios.load(scenario_name + ".py").Scenario()
         # create world
-        world = scenario.make_world()
+        world = scenario.make_world(random_prey=random_prey)
         # create multiagent environment
         if benchmark:
             super().__init__(world, scenario.reset_world, scenario.reward,

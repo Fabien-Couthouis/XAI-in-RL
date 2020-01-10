@@ -1,7 +1,7 @@
 # !/bin/bash
 # sh train.sh
 
-EXP_NAME="simple_tag_independent_ddpg"
+EXP_NAME="simple_tag_maddpg"
 ALIAS=""
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 export CUDA_VISIBLE_DEVICES=0

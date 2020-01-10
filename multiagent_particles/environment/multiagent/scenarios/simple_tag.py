@@ -5,9 +5,36 @@ import numpy as np
 from multiagent.core import World, Agent, Landmark, Action
 from multiagent.scenario import BaseScenario
 
+
+# By fcouthouis
+def maximize_distance_action(agent, world):
+    action = Action()
+    action.u = np.zeros(world.dim_p)
+    action.c = np.zeros(world.dim_c)
+
+    new_pos = np.copy(agent.state.p_pos)
+    for other in world.agents:
+        if other.adversary:
+            new_pos -= other.state.p_pos
+
+    dx = new_pos[0] - agent.state.p_pos[0]
+    dy = new_pos[1] - agent.state.p_pos[1]
+    if new_pos[0] > new_pos[1]:
+        action.u[0] = 1
+        action.u[1] = dx/dy
+    else:
+        action.u[1] = 1
+        action.u[0] = dy/dx
+
+    # accel of prey
+    sensitivity = 3.0
+    if agent.accel is not None:
+        sensitivity = agent.accel
+    action.u *= sensitivity
+    return action
+
+
 # By Yuan Zhang:
-
-
 def random_action(agent, world):
     action = Action()
     action.u = np.zeros(world.dim_p)
@@ -32,7 +59,7 @@ def random_action(agent, world):
 
 
 class Scenario(BaseScenario):
-    def make_world(self):
+    def make_world(self, random_prey=False):
         world = World()
         # By Yuan Zhang
         world.collaborative = True
@@ -54,7 +81,8 @@ class Scenario(BaseScenario):
             #agent.accel = 20.0 if agent.adversary else 25.0
             agent.max_speed = 1.0 if agent.adversary else 1.3  # 1.0 1.3
             # By Yuan Zhang:
-            agent.action_callback = random_action if not agent.adversary else None
+            if not agent.adversary:
+                agent.action_callback = random_action if random_prey else maximize_distance_action
 
         # add landmarks
         world.landmarks = [Landmark() for i in range(num_landmarks)]

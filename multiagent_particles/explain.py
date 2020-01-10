@@ -1,4 +1,5 @@
-# not well structured for now
+#! not well structured for now
+
 import numpy as np
 import torch
 import time
@@ -49,7 +50,7 @@ def take_action(behaviour_nets, env, state, last_action):
     actions = []
     i = 0
     num_models = len(behaviour_nets)
-    while len(actions) < 3:
+    while len(actions) < len(env.action_space):
         action_logits = behaviour_nets[i % num_models].policy(
             state, schedule=None, last_act=last_action, last_hid=None, info={})
         action = select_action(args, action_logits, status='test')
@@ -67,6 +68,9 @@ def play(env, coalition=None, behaviour_nets=None, num_episodes=2000, max_steps_
 
     for episode in range(1, num_episodes+1):
         observations = env.reset()
+        for obs in observations:
+            print(len(obs))
+
         episode_rewards = []
 
         for step in range(max_steps_per_episode):
@@ -104,7 +108,8 @@ def get_combinations(features):
     return combinations_list
 
 
-def get_coalition_values(env, features, num_episodes, behaviour_nets):
+def get_marginal_contributions(env, features, num_episodes, behaviour_nets):
+    'Get mean reward for each agent for each coalitions '
     coalition_values = dict()
     for coalition in get_combinations(features):
         total_rewards = play(env, coalition=coalition,
@@ -118,7 +123,7 @@ def get_coalition_values(env, features, num_episodes, behaviour_nets):
 def shapley_values(env, behaviour_nets, num_episodes=10):
     'Naive implementation (not optimized at all)'
     agents_ids = range(env.get_num_of_agents())
-    coalition_values = get_coalition_values(
+    coalition_values = get_marginal_contributions(
         env, agents_ids, num_episodes, behaviour_nets)
     shapley_values = []
     for agent_id in agents_ids:
@@ -161,18 +166,21 @@ def take_actions_for_coalition(coalition, behaviour_nets, env, state, last_actio
 
 
 if __name__ == "__main__":
-    env = EnvWrapper("simple_tag")
-    env.world.entities[0].color = [0.0, 0.0, 1.0]
-    env.world.entities[1].color = [1.0, 0.0, 0.0]
-    env.world.entities[2].color = [0.0, 1.0, 0.0]
-
+    env = EnvWrapper("simple_tag", random_prey=False)
+    # env.world.entities[0].color = [0.0, 0.0, 1.0]
+    # env.world.entities[1].color = [1.0, 0.0, 0.0]
+    # env.world.entities[2].color = [0.0, 1.0, 0.0]
+    model_path = "model_save/simple_tag_maddpg/model.pt"
     model_path_good = "model_save/simple_tag_independent_ddpg_good/model.pt"
     model_path_medium = "model_save/simple_tag_independent_ddpg_medium/model.pt"
     model_path_bad = "model_save/simple_tag_independent_ddpg_bad/model.pt"
 
-    behaviour_nets = [load_model(model_path_good), load_model(
-        model_path_medium), load_model(
-        model_path_bad)]
+    # behaviour_nets = [load_mo-del(model_path_good), load_model(
+    #     model_path_medium), load_model(
+    #     model_path_bad)]
+    behaviour_nets = [load_model(model_path)]
+    print(type(env.world.agents[0].state.p_pos))
+
     play(env, behaviour_nets=behaviour_nets, num_episodes=100)
 
     # for i in range(5):
