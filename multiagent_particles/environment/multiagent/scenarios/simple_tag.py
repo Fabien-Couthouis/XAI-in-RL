@@ -27,7 +27,7 @@ def maximize_distance_action(agent, world):
         action.u[0] = dy/dx
 
     # accel of prey
-    sensitivity = 3.0
+    sensitivity = 1.0
     if agent.accel is not None:
         sensitivity = agent.accel
     action.u *= sensitivity
