@@ -19,4 +19,4 @@ while not done:
     observation, reward, done, info = env.step(action)
     rewards.append(reward)
 
-print(f'Agent(s) obtained mean reward: {rewards}')
+print(f'Agent(s) obtained mean reward: {np.mean(rewards)}')

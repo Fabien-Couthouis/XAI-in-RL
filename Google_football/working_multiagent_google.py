@@ -26,7 +26,7 @@ class RllibGFootball(MultiAgentEnv):
     self.env = football_env.create_environment(
         env_name='test_example_multiagent', stacked=False,
         logdir='/tmp/rllib_test',
-        write_goal_dumps=False, write_full_episode_dumps=False, render=True,
+        write_goal_dumps=False, write_full_episode_dumps=False, render=False,
         dump_frequency=0,
         number_of_left_players_agent_controls=num_agents,
         channel_dimensions=(42, 42))
@@ -72,7 +72,7 @@ if __name__ == '__main__':
   ray.init(num_gpus=1)
 
   # Simple environment with `num_agents` independent players
-  register_env('gfootball', lambda _: RllibGFootball(args.num_agents))
+  register_env('g_football', lambda _: RllibGFootball(args.num_agents))
   single_env = RllibGFootball(args.num_agents)
   obs_space = single_env.observation_space
   act_space = single_env.action_space
@@ -91,7 +91,7 @@ if __name__ == '__main__':
       stop={'training_iteration': args.num_iters},
       checkpoint_freq=50,
       config={
-          'env': 'gfootball',
+          'env': 'g_football',
           'lambda': 0.95,
           'kl_coeff': 0.2,
           'clip_rewards': False,
