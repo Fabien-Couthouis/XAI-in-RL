@@ -3,7 +3,7 @@ from multiagent.environment import MultiAgentEnv
 import multiagent.scenarios as scenario
 from utilities.gym_wrapper import *
 import numpy as np
-from aux import *
+from auxm import *
 
 
 '''define the model name'''
