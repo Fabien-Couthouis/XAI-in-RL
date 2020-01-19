@@ -13,20 +13,22 @@ from ray.tune.registry import register_env
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--num-agents', type=int, default=3)
-parser.add_argument('--num-policies', type=int, default=3)
-parser.add_argument('--num-iters', type=int, default=100000)
+parser.add_argument('--num-agents', type=int, default=4)
+parser.add_argument('--num-policies', type=int, default=4)
+parser.add_argument('--num-iters', type=int, default=100)
 parser.add_argument('--simple', action='store_true')
+
+CHECKPOINT_PATH = "./multiagent-checkpoint-100"
 
 
 class RllibGFootball(MultiAgentEnv):
   """An example of a wrapper for GFootball to make it compatible with rllib."""
 
-  def __init__(self, num_agents):
+  def __init__(self, num_agents, render=True):
     self.env = football_env.create_environment(
         env_name='test_example_multiagent', stacked=False,
         logdir='/tmp/rllib_test',
-        write_goal_dumps=False, write_full_episode_dumps=False, render=False,
+        write_goal_dumps=False, write_full_episode_dumps=False, render=render,
         dump_frequency=0,
         number_of_left_players_agent_controls=num_agents,
         channel_dimensions=(42, 42))
@@ -65,14 +67,17 @@ class RllibGFootball(MultiAgentEnv):
         obs[key] = o
     dones = {'__all__': d}
     return obs, rewards, dones, infos
-
+  
+  def render(self):
+    self.env.render()
+  
 
 if __name__ == '__main__':
   args = parser.parse_args()
   ray.init(num_gpus=1)
 
   # Simple environment with `num_agents` independent players
-  register_env('g_football', lambda _: RllibGFootball(args.num_agents))
+  register_env('g_football', lambda _: RllibGFootball(args.num_agents, render=False))
   single_env = RllibGFootball(args.num_agents)
   obs_space = single_env.observation_space
   act_space = single_env.action_space
@@ -101,7 +106,7 @@ if __name__ == '__main__':
           'sample_batch_size': 100,
           'sgd_minibatch_size': 500,
           'num_sgd_iter': 10,
-          'num_workers': 3,
+          'num_workers': 1,
           'num_envs_per_worker': 1,
           'batch_mode': 'truncate_episodes',
           'observation_filter': 'NoFilter',
