@@ -10,6 +10,7 @@ import json
 import os
 import pickle
 import shelve
+import numpy as np
 from pathlib import Path
 
 import gym
@@ -22,6 +23,9 @@ from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from ray.tune.util import merge_dicts
 from working_multiagent_google import RllibGFootball
 from ray.tune.registry import register_env
+from itertools import combinations, permutations
+from statistics import mean
+
 
 EXAMPLE_USAGE = """
 Example Usage via RLlib CLI:
@@ -227,6 +231,10 @@ def create_parser(parser_creator=None):
         help="Write progress to a temporary file (updated "
         "after each episode). An output filename must be set using --out; "
         "the progress file will live in the same folder.")
+    parser.add_argument(
+        "--compute-shapley",
+        default=False,
+        help="Compute Shapley values.")
     return parser
 
 
@@ -260,6 +268,7 @@ def run(args, parser):
     agent.restore(args.checkpoint)
     num_steps = int(args.steps)
     num_episodes = int(args.episodes)
+    env = agent.workers.local_worker().env
     with RolloutSaver(
             args.out,
             args.use_shelve,
@@ -267,8 +276,12 @@ def run(args, parser):
             target_steps=num_steps,
             target_episodes=num_episodes,
             save_info=args.save_info) as saver:
-        rollout(agent, args.env, num_steps, num_episodes, saver,
-                args.no_render, args.monitor)
+        if args.compute_shapley:
+            shapley_values(args.env, env.num_agents,
+                           agent, num_steps, num_episodes)
+        else:
+            rollout(agent, args.env, num_steps, num_episodes, saver,
+                    args.no_render, args.monitor)
 
 
 class DefaultMapping(collections.defaultdict):
@@ -277,6 +290,9 @@ class DefaultMapping(collections.defaultdict):
     def __missing__(self, key):
         self[key] = value = self.default_factory(key)
         return value
+
+
+DEBUG = False
 
 
 def default_policy_agent_mapping(unused_agent_id):
@@ -303,6 +319,8 @@ def rollout(agent,
             no_render=True,
             monitor=False,
             coalition=None):
+    "play"
+
     policy_agent_mapping = default_policy_agent_mapping
 
     if hasattr(agent, "workers"):
@@ -349,10 +367,17 @@ def rollout(agent,
         while not done and keep_going(steps, num_steps, episodes,
                                       num_episodes):
             multi_obs = obs if multiagent else {_DUMMY_AGENT_ID: obs}
-            action = take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_actions)
+
+            if coalition is not None:
+                action = take_actions_for_coalition(env, agent, multi_obs, mapping_cache, use_lstm,
+                                                    agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition)
+            else:
+                action = take_action(agent, multi_obs, mapping_cache, use_lstm,
+                                     agent_states, prev_actions, prev_rewards, policy_agent_mapping)
 
             action = action if multiagent else action[_DUMMY_AGENT_ID]
             next_obs, reward, done, info = env.step(action)
+
             if multiagent:
                 for agent_id, r in reward.items():
                     prev_rewards[agent_id] = r
@@ -366,15 +391,19 @@ def rollout(agent,
                 reward_total += reward
             if not no_render:
                 env.render()
+
             saver.append_step(obs, action, next_obs, reward, done, info)
             steps += 1
             obs = next_obs
         saver.end_rollout()
         print("Episode #{}: reward: {}".format(episodes, reward_total))
+
         if done:
             episodes += 1
             reward_table.append(reward_total)
+
     return reward_table
+
 
 def get_combinations(features):
     'Get all possible coalitions between features'
@@ -386,28 +415,31 @@ def get_combinations(features):
     return combinations_list
 
 
-def get_marginal_contributions(env, features, num_episodes, behaviour_nets):
+def get_marginal_contributions(env_name, features, num_steps, num_episodes, agent):
     'Get mean reward for each agent for each coalitions '
     coalition_values = dict()
     for coalition in get_combinations(features):
-        total_rewards = play(env, coalition=coalition,
-                             behaviour_nets=behaviour_nets, num_episodes=num_episodes, render=False)
+        total_rewards = rollout(
+            agent, env_name, num_steps, num_episodes, coalition=coalition)
+
         coalition_values[str(coalition)] = round(mean(total_rewards), 2)
     if DEBUG:
         print("Coalition values: ", coalition_values)
     return coalition_values
 
 
-def shapley_values(env, behaviour_nets, num_episodes=10):
+def shapley_values(env_name, agent_nb, agent, num_steps=10, num_episodes=1):
     'Naive implementation (not optimized at all)'
-    agents_ids = range(env.get_num_of_agents())
+    agents_ids = range(agent_nb)
     coalition_values = get_marginal_contributions(
-        env, agents_ids, num_episodes, behaviour_nets)
+        env_name, agents_ids, num_steps, num_episodes, agent)
     shapley_values = []
+
     for agent_id in agents_ids:
         if DEBUG:
             print("Computing shap value for agent: ", agent_id)
         shapley_value = 0
+
         for permutation in permutations(agents_ids):
             to_remove = []
             if DEBUG:
@@ -429,9 +461,14 @@ def shapley_values(env, behaviour_nets, num_episodes=10):
                     to_remove.append(x)
         shapley_values.append(shapley_value)
 
-    return np.divide(shapley_values, np.math.factorial(env.get_num_of_agents()))
+    result = np.divide(shapley_values, np.math.factorial(agent_nb))
+    norm_result = np.divide(result, sum(result))
+    print(norm_result)
+    return norm_result
 
-def take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_actions):
+
+def take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_actions, prev_rewards, policy_agent_mapping):
+    "take actions"
     action_dict = {}
     for agent_id, a_obs in multi_obs.items():
         if a_obs is not None:
@@ -457,15 +494,19 @@ def take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_ac
             prev_actions[agent_id] = a_action
     return action_dict
 
-def take_actions_for_coalition(coalition, behaviour_nets, env, state, last_action):
+
+def take_actions_for_coalition(env, agent, multi_obs, mapping_cache, use_lstm,
+                               agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition):
     'Return actions where each agent in coalition follow the policy, others play at random'
-    actions = take_action(behaviour_nets, env, state, last_action)
+    actions = take_action(agent, multi_obs, mapping_cache, use_lstm,
+                          agent_states, prev_actions, prev_rewards, policy_agent_mapping)
     random_actions = env.get_random_actions()
 
     for agent_id in coalition:
-        random_actions[agent_id] = actions[agent_id]
+        key = "agent_"+str(agent_id)
+        random_actions[key] = actions[key]
 
-    return actions
+    return random_actions
 
 
 if __name__ == "__main__":

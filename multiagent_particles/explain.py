@@ -62,15 +62,12 @@ def take_action(behaviour_nets, env, state, last_action):
     return actions
 
 
-def play(env, coalition=None, behaviour_nets=None, num_episodes=2000, max_steps_per_episode=500, render=True):
+def play(env, coalition=None, behaviour_nets=None, num_episodes=2000, max_steps_per_episode=100, render=True):
     actions = None
     total_rewards = []
 
     for episode in range(1, num_episodes+1):
         observations = env.reset()
-        for obs in observations:
-            print(len(obs))
-
         episode_rewards = []
 
         for step in range(max_steps_per_episode):
@@ -170,7 +167,7 @@ if __name__ == "__main__":
     # env.world.entities[0].color = [0.0, 0.0, 1.0]
     # env.world.entities[1].color = [1.0, 0.0, 0.0]
     # env.world.entities[2].color = [0.0, 1.0, 0.0]
-    model_path = "model_save/simple_tag_maddpg/model.pt"
+    model_path = "model_save/simple_tag_maddpg_random_prey/model.pt"
     model_path_good = "model_save/simple_tag_independent_ddpg_good/model.pt"
     model_path_medium = "model_save/simple_tag_independent_ddpg_medium/model.pt"
     model_path_bad = "model_save/simple_tag_independent_ddpg_bad/model.pt"
@@ -179,11 +176,10 @@ if __name__ == "__main__":
     #     model_path_medium), load_model(
     #     model_path_bad)]
     behaviour_nets = [load_model(model_path)]
-    print(type(env.world.agents[0].state.p_pos))
 
-    play(env, behaviour_nets=behaviour_nets, num_episodes=100)
+    play(env, behaviour_nets=None, num_episodes=100)
 
     # for i in range(5):
     #     print(i)
     #     print("Shapley values for each agent: ",
-    #           shapley_values(env, behaviour_nets, num_episodes=500), "\n")
+    #           shapley_values(env, behaviour_nets, num_episodes=50), "\n")
