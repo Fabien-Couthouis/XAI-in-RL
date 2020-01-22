@@ -81,8 +81,8 @@ class Scenario(BaseScenario):
             #agent.accel = 20.0 if agent.adversary else 25.0
             agent.max_speed = 1.0 if agent.adversary else 1.3  # 1.0 1.3
             # By Yuan Zhang:
-            # if not agent.adversary:
-            #     agent.action_callback = random_action if random_prey else maximize_distance_action
+            if not agent.adversary:
+                agent.action_callback = random_action if random_prey else maximize_distance_action
 
         # add landmarks
         world.landmarks = [Landmark() for i in range(num_landmarks)]
