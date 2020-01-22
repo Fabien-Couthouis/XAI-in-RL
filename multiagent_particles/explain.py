@@ -159,11 +159,11 @@ def take_actions_for_coalition(coalition, behaviour_nets, env, state, last_actio
     for agent_id in coalition:
         random_actions[agent_id] = actions[agent_id]
 
-    return actions
+    return random_actions
 
 
 if __name__ == "__main__":
-    env = EnvWrapper("simple_tag", random_prey=False)
+    env = EnvWrapper("simple_tag", random_prey=True)
     # env.world.entities[0].color = [0.0, 0.0, 1.0]
     # env.world.entities[1].color = [1.0, 0.0, 0.0]
     # env.world.entities[2].color = [0.0, 1.0, 0.0]
@@ -172,14 +172,14 @@ if __name__ == "__main__":
     model_path_medium = "model_save/simple_tag_independent_ddpg_medium/model.pt"
     model_path_bad = "model_save/simple_tag_independent_ddpg_bad/model.pt"
 
-    # behaviour_nets = [load_mo-del(model_path_good), load_model(
-    #     model_path_medium), load_model(
-    #     model_path_bad)]
-    behaviour_nets = [load_model(model_path)]
+    behaviour_nets = [load_model(model_path_good), load_model(
+        model_path_medium), load_model(
+        model_path_bad)]
+    # behaviour_nets = [load_model(model_path)]
 
-    play(env, behaviour_nets=None, num_episodes=100)
+    # play(env, behaviour_nets=None, num_episodes=100)
 
-    # for i in range(5):
-    #     print(i)
-    #     print("Shapley values for each agent: ",
-    #           shapley_values(env, behaviour_nets, num_episodes=50), "\n")
+    for i in range(5):
+        print(i)
+        print("Shapley values for each agent: ",
+              shapley_values(env, behaviour_nets, num_episodes=100), "\n")
