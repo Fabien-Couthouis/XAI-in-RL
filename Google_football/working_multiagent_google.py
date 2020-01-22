@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--num-agents', type=int, default=4)
 parser.add_argument('--num-policies', type=int, default=4)
-parser.add_argument('--num-iters', type=int, default=100)
+parser.add_argument('--num-iters', type=int, default=4000)
 parser.add_argument('--simple', action='store_true')
 
 CHECKPOINT_PATH = "./multiagent-checkpoint-100"
@@ -27,7 +27,7 @@ class RllibGFootball(MultiAgentEnv):
 
     def __init__(self, num_agents, render=True):
         self.env = football_env.create_environment(
-            env_name='test_example_multiagent', stacked=False,
+            env_name='shap', stacked=False,
             logdir='/tmp/rllib_test',
             write_goal_dumps=False, write_full_episode_dumps=False, render=render,
             dump_frequency=0,
@@ -116,7 +116,7 @@ if __name__ == '__main__':
             'sample_batch_size': 100,
             'sgd_minibatch_size': 500,
             'num_sgd_iter': 10,
-            'num_workers': 1,
+            'num_workers': 3,
             'num_envs_per_worker': 1,
             'batch_mode': 'truncate_episodes',
             'observation_filter': 'NoFilter',
