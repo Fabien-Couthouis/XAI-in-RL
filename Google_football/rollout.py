@@ -37,11 +37,6 @@ Example Usage via executable:
     --env CartPole-v0 --steps 1000000 --out rollouts.pkl
 """
 
-# Note: if you use any custom models or envs, register them here first, e.g.:
-#
-# ModelCatalog.register_custom_model("pa_model", ParametricActionsModel)
-register_env("gfootball", lambda _: RllibGFootball(3))
-
 
 class RolloutSaver:
     """Utility class for storing rollouts.
@@ -235,6 +230,10 @@ def create_parser(parser_creator=None):
         "--compute-shapley",
         default=False,
         help="Compute Shapley values.")
+    parser.add_argument(
+        "--scenario-name",
+        default="shapley_no_adversary",
+        help="Change scenario name.")
     return parser
 
 
@@ -512,4 +511,7 @@ def take_actions_for_coalition(env, agent, multi_obs, mapping_cache, use_lstm,
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
+    # Register custom envs
+    register_env("gfootball", lambda _: RllibGFootball(
+        num_agents=3, env_name=args.scenario_name))
     run(args, parser)

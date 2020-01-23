@@ -1,0 +1,50 @@
+{
+  "batch_mode": "truncate_episodes",
+  "clip_rewards": false,
+  "entropy_coeff": 0.01,
+  "env": "g_football",
+  "kl_coeff": 0.2,
+  "lambda": 0.95,
+  "log_level": "WARN",
+  "lr": 0.00025,
+  "multiagent": {
+    "policies": {
+      "policy_0": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {}
+      ],
+      "policy_1": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {}
+      ],
+      "policy_2": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {}
+      ],
+      "policy_3": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {}
+      ]
+    },
+    "policy_mapping_fn": "<function <lambda> at 0x7f80cb9c2268>"
+  },
+  "num_envs_per_worker": 1,
+  "num_gpus": 1,
+  "num_sgd_iter": 10,
+  "num_workers": 1,
+  "observation_filter": "NoFilter",
+  "sample_batch_size": 100,
+  "sgd_minibatch_size": 500,
+  "simple_optimizer": false,
+  "train_batch_size": 2000,
+  "vf_clip_param": 10.0,
+  "vf_share_layers": "true"
+}
