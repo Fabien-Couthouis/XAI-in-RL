@@ -1,0 +1,2 @@
+/usr/bin/ar qc libdatalib.a  CMakeFiles/datalib.dir/src/data/matchdata.cpp.o CMakeFiles/datalib.dir/src/data/playerdata.cpp.o CMakeFiles/datalib.dir/src/data/teamdata.cpp.o
+/usr/bin/ranlib libdatalib.a
