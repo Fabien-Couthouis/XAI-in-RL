@@ -3,6 +3,7 @@
 import numpy as np
 import torch
 import time
+import matplotlib.pyplot as plt
 from itertools import combinations, permutations
 from utilities.env_wrapper import EnvWrapper
 from utilities.util import *
@@ -10,6 +11,7 @@ from models.maddpg import MADDPG
 from arguments import *
 from statistics import mean
 from math import factorial
+
 
 DEBUG = False  # print debugging info if set to true
 
@@ -162,20 +164,30 @@ def take_actions_for_coalition(coalition, behaviour_nets, env, state, last_actio
     return random_actions
 
 
+def plot(x,y):
+    
+
+
 if __name__ == "__main__":
     env = EnvWrapper("simple_tag", random_prey=True)
     # env.world.entities[0].color = [0.0, 0.0, 1.0]
     # env.world.entities[1].color = [1.0, 0.0, 0.0]
     # env.world.entities[2].color = [0.0, 1.0, 0.0]
-    model_path = "model_save/simple_tag_maddpg_random_prey/model.pt"
+    # model_path = "model_save/simple_tag_maddpg_random_prey/model.pt"
     model_path_good = "model_save/simple_tag_independent_ddpg_good/model.pt"
     model_path_medium = "model_save/simple_tag_independent_ddpg_medium/model.pt"
     model_path_bad = "model_save/simple_tag_independent_ddpg_bad/model.pt"
 
-    behaviour_nets = [load_model(model_path_good), load_model(
-        model_path_medium), load_model(
-        model_path_bad)]
-    # behaviour_nets = [load_model(model_path)]
+    # behaviour_nets = [load_model(model_path_good), load_model(
+    #     model_path_medium), load_model(
+    #     model_path_bad)]
+    behaviour_nets_good = [load_model(model_path_good)]
+    behaviour_nets_medium = [load_model(model_path_medium)]
+    behaviour_nets_bad = [load_model(model_path_bad)]
+    nets = [behaviour_nets_bad, behaviour_nets_medium, behaviour_nets_good]
+
+    for n in nets:
+        rewards = play(env, behaviour_nets=n)
 
     # play(env, behaviour_nets=None, num_episodes=100)
 
