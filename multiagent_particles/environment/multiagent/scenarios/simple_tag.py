@@ -59,7 +59,7 @@ def random_action(agent, world):
 
 
 class Scenario(BaseScenario):
-    def make_world(self, random_prey=False):
+    def make_world(self, random_prey=True):
         world = World()
         # By Yuan Zhang
         world.collaborative = True
@@ -218,3 +218,13 @@ class Scenario(BaseScenario):
 
     def episode_over(self, agent, world):
         return self.done
+
+    def get_winning_agent(self):
+        for agent in self.agents:
+            # Agents are negatively rewarded if caught by adversaries
+            adversaries = self.scenario.adversaries(self.world)
+            if agent.collide:
+                for a in adversaries:
+                    if self.is_collision(a, agent):
+                        return(a)
+        return None

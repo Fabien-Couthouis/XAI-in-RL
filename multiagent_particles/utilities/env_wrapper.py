@@ -44,3 +44,22 @@ class EnvWrapper(MultiAgentEnv):
             agents_actions.append(action_vec)
 
         return agents_actions
+
+    def get_winning_agent(self):
+        'Get predator that is in collision with prey'
+
+        def is_collision(agent1, agent2):
+            delta_pos = agent1.state.p_pos - agent2.state.p_pos
+            dist = np.sqrt(np.sum(np.square(delta_pos)))
+            dist_min = agent1.size + agent2.size
+            return True if dist < dist_min else False
+
+        preys = [agent for agent in self.world.agents if not agent.adversary]
+        predators = self.agents
+
+        for pred in predators:
+            if pred.collide:
+                for prey in preys:
+                    if is_collision(prey, pred):
+                        return(pred)
+        return None  # episode not over

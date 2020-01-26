@@ -1,9 +1,11 @@
 #! not well structured for now
 
+import pandas as pd
 import numpy as np
 import torch
 import time
 import matplotlib.pyplot as plt
+import seaborn as sns
 from itertools import combinations, permutations
 from utilities.env_wrapper import EnvWrapper
 from utilities.util import *
@@ -64,9 +66,10 @@ def take_action(behaviour_nets, env, state, last_action):
     return actions
 
 
-def play(env, coalition=None, behaviour_nets=None, num_episodes=2000, max_steps_per_episode=100, render=True):
+def play(env, coalition=None, behaviour_nets=None, num_episodes=2000, max_steps_per_episode=100, render=True, return_goal_agents=False):
     actions = None
     total_rewards = []
+    goal_agents = []
 
     for episode in range(1, num_episodes+1):
         observations = env.reset()
@@ -88,13 +91,15 @@ def play(env, coalition=None, behaviour_nets=None, num_episodes=2000, max_steps_
                 time.sleep(0.1)
 
             if any(dones):
+                if return_goal_agents:
+                    goal_agents.append(env.get_winning_agent().name)
                 break
 
         sum_rewards = sum(episode_rewards)
         episode_rewards.clear()
         total_rewards.append(sum_rewards)
         # print("End of episode ", episode, "\nTotal reward is ", sum_rewards)
-    return total_rewards
+    return total_rewards if not return_goal_agents else total_rewards, goal_agents
 
 
 def get_combinations(features):
@@ -164,16 +169,66 @@ def take_actions_for_coalition(coalition, behaviour_nets, env, state, last_actio
     return random_actions
 
 
-def plot(x,y):
-    
+def plot_barchart(values, colors, agents):
+    barlist = plt.barh(agents, values)
+
+    for i in range(len(barlist)):
+        barlist[i].set_color(colors[i])
+
+    for i, val in enumerate(values):
+        plt.text(val if val < 0 else 0, i, str(round(val, 2)), fontsize=17)
+
+    plt.xlabel("Contribution of each agent: Shapley value", fontsize=20)
+    plt.ylabel("Agent", fontsize=20)
+
+    plt.show()
+
+
+def plot_lines(b_nets, colors):
+    nets = {"Bad": [behaviour_nets[2]],
+            "Medium": [behaviour_nets[1]], "Good": [behaviour_nets[0]]}
+
+    nets_rewards = {}
+    n_episodes = 100
+
+    for net_name, net in nets.items():
+        rewards = play(env, behaviour_nets=net,
+                       render=False, num_episodes=n_episodes)
+        nets_rewards[net_name] = rewards
+
+    data = pd.DataFrame({"Episode": np.arange(
+        1, n_episodes+1), "Well trained (5000 training episodes)": nets_rewards["Good"], "Mediumly trained (1500 training episodes)": nets_rewards["Medium"], "Poorly trained (500 training episodes)": nets_rewards["Bad"]})
+
+    ax = sns.lineplot(x="Episode", y='value', hue='variable',
+                      data=pd.melt(data, ['Episode']), palette=colors)
+    plt.xlabel("Episode", fontsize=20)
+    plt.ylabel("Reward for episode", fontsize=20)
+    # plt.legend(title="IDDPG model)
+    ax.legend_.set_title("IDDPG model")
+
+    plt.show()
+
+
+def plot_piechart(labels, values, colors):
+    fig1, ax1 = plt.subplots()
+    ax1.pie(values, labels=labels, autopct='%1.1f%%', startangle=90,
+            colors=colors, textprops={'fontsize': 14})
+    # Equal aspect ratio ensures that pie is drawn as a circle.
+    ax1.axis('equal')
+
+    plt.show()
 
 
 if __name__ == "__main__":
+    # To change model type, copy-paste arguments from arguments_model_type.py to arguments.py!
+
     env = EnvWrapper("simple_tag", random_prey=True)
-    # env.world.entities[0].color = [0.0, 0.0, 1.0]
-    # env.world.entities[1].color = [1.0, 0.0, 0.0]
-    # env.world.entities[2].color = [0.0, 1.0, 0.0]
-    # model_path = "model_save/simple_tag_maddpg_random_prey/model.pt"
+    colors = [(245/255, 121/255, 58/255), (169/255, 90 /
+                                           255, 161/255), (133/255, 192/255, 249/255)]
+    # colors = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)]
+    for i in range(env.get_num_of_agents()):
+        env.world.entities[i].color = colors[i]
+    model_path = "model_save/simple_tag_maddpg_random_prey/model.pt"
     model_path_good = "model_save/simple_tag_independent_ddpg_good/model.pt"
     model_path_medium = "model_save/simple_tag_independent_ddpg_medium/model.pt"
     model_path_bad = "model_save/simple_tag_independent_ddpg_bad/model.pt"
@@ -181,17 +236,37 @@ if __name__ == "__main__":
     # behaviour_nets = [load_model(model_path_good), load_model(
     #     model_path_medium), load_model(
     #     model_path_bad)]
-    behaviour_nets_good = [load_model(model_path_good)]
-    behaviour_nets_medium = [load_model(model_path_medium)]
-    behaviour_nets_bad = [load_model(model_path_bad)]
-    nets = [behaviour_nets_bad, behaviour_nets_medium, behaviour_nets_good]
 
-    for n in nets:
-        rewards = play(env, behaviour_nets=n)
+    # behaviour_nets = [load_model(model_path)]
+    # shapley_values = shapley_values(env, behaviour_nets, 100)
 
-    # play(env, behaviour_nets=None, num_episodes=100)
+    # print(shapley_values)
 
-    for i in range(5):
-        print(i)
-        print("Shapley values for each agent: ",
-              shapley_values(env, behaviour_nets, num_episodes=100), "\n")
+    # _, agents = play(env, behaviour_nets=behaviour_nets,
+    #                  num_episodes=100, return_goal_agents=True, render=False)
+    # print(agents)
+    # print("1", agents.count('agent 0'))
+    # print("2", agents.count('agent 1'))
+    # print("3", agents.count('agent 2'))
+    labels = ["Well trained", "Mediumly trained", "Poorly trained"]
+
+    eat = [44, 32, 24]
+    plot_piechart(labels, eat, colors)
+
+    # plot_barchart([0.44144144, 0.34684685, 0.21171171], colors, [
+    #               "Turing (middle)", "Meitner (top)", "Einstein (bottom)"])
+    # plot_barchart([3.75, -2.59, 20.07], colors, [
+    #               "Agent 1", "Agent 2", "Agent 3"])
+    # plot_barchart([23.03, 7.46, -10.98], colors, [
+    #               "Well trained", "Mediumly trained", "Poorly trained"])
+
+    # Plot linechart
+
+    # plot_lines(behaviour_nets, colors)
+# [0.41666667 0.5        0.08333333] 2
+# 0.60144928 0.34057971 0.05797101] 1
+# [ 3.75 -2.59 20.07] prey 1
+# 1 31
+# 2 14
+# 3 55
+# [0.44144144 0.34684685 0.21171171]

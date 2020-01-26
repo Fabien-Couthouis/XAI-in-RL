@@ -39,30 +39,30 @@ flags.DEFINE_bool('real_time', True,
 
 
 def main(_):
-  players = FLAGS.players.split(';') if FLAGS.players else ''
-  assert not (any(['agent' in player for player in players])
-             ), ('Player type \'agent\' can not be used with play_game.')
-  cfg = config.Config({
-      'action_set': FLAGS.action_set,
-      'dump_full_episodes': True,
-      'players': players,
-      'real_time': FLAGS.real_time,
-  })
-  if FLAGS.level:
-    cfg['level'] = FLAGS.level
-  env = football_env.FootballEnv(cfg)
-  env.render()
-  env.reset()
-  try:
-    while True:
-      _, _, done, _ = env.step([])
-      if done:
-        env.reset()
-  except KeyboardInterrupt:
-    logging.warning('Game stopped, writing dump...')
-    env.write_dump('shutdown')
-    exit(1)
+    players = FLAGS.players.split(';') if FLAGS.players else ''
+    assert not (any(['agent' in player for player in players])
+                ), ('Player type \'agent\' can not be used with play_game.')
+    cfg = config.Config({
+        'action_set': FLAGS.action_set,
+        'dump_full_episodes': True,
+        'players': players,
+        'real_time': FLAGS.real_time,
+    })
+    if FLAGS.level:
+        cfg['level'] = FLAGS.level
+    env = football_env.FootballEnv(cfg)
+    env.render()
+    env.reset()
+    try:
+        while True:
+            _, _, done, _ = env.step([])
+            if done:
+                env.reset()
+    except KeyboardInterrupt:
+        logging.warning('Game stopped, writing dump...')
+        env.write_dump('shutdown')
+        exit(1)
 
 
 if __name__ == '__main__':
-  app.run(main)
+    app.run(main)
