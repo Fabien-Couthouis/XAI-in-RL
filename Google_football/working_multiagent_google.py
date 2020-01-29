@@ -80,6 +80,9 @@ class RllibGFootball(MultiAgentEnv):
             agents_actions[key] = self.action_space.sample()
         return agents_actions
 
+    def test(self):
+        print(self.env.observation())
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -88,7 +91,7 @@ if __name__ == '__main__':
     # Simple environment with `num_agents` independent players
     register_env('g_football', lambda _: RllibGFootball(
         args.num_agents, render=False))
-    single_env = RllibGFootball(args.num_agents)
+    single_env = RllibGFootball(args.num_agents, render=False)
     obs_space = single_env.observation_space
     act_space = single_env.action_space
 

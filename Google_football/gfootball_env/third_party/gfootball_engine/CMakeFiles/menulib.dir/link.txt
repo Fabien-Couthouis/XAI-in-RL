@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmenulib.a  CMakeFiles/menulib.dir/src/menu/startmatch/loadingmatch.cpp.o CMakeFiles/menulib.dir/src/menu/pagefactory.cpp.o CMakeFiles/menulib.dir/src/menu/menutask.cpp.o CMakeFiles/menulib.dir/src/menu/ingame/radar.cpp.o CMakeFiles/menulib.dir/src/menu/ingame/gamepage.cpp.o CMakeFiles/menulib.dir/src/menu/ingame/scoreboard.cpp.o
-/usr/bin/ranlib libmenulib.a

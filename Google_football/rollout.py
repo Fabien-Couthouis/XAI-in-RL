@@ -25,6 +25,7 @@ from working_multiagent_google import RllibGFootball
 from ray.tune.registry import register_env
 from itertools import combinations, permutations
 from statistics import mean
+from scipy.spatial.distance import euclidean
 
 
 EXAMPLE_USAGE = """
@@ -310,6 +311,36 @@ def keep_going(steps, num_steps, episodes, num_episodes):
     return True
 
 
+def get_ball_owned_player(env):
+    obs = env.env.env.env._env.observation()  # Thanks google
+    return obs['ball_owned_player']
+
+
+def get_nearest_agent_from_ball(env, team="left_team"):
+    obs = env.env.env.env._env.observation()
+    ball_x, ball_y, ball_z = obs["ball"]
+    agents_positions = obs[team]
+    nearest_agent = None
+    min_dist = None
+    for i, (x, y) in enumerate(agents_positions):
+        dist = euclidean([ball_x, x], [ball_y, y])
+        # print("i", i, dist)
+
+        # print(dist)
+        if min_dist is None or dist < min_dist:
+            min_dist = dist
+            nearest_agent = i-1  # do not take goal in account
+    return nearest_agent
+
+
+def get_ball_owned_team(env):
+    obs = env.env.env.env._env.observation()
+    if obs['ball_owned_team'] == -1:
+        return None
+    else:
+        return "right" if obs['ball_owned_team'] == 1 else "left"
+
+
 def rollout(agent,
             env_name,
             num_steps,
@@ -318,7 +349,7 @@ def rollout(agent,
             no_render=True,
             monitor=False,
             coalition=None):
-    "play"
+    " Play game "
 
     policy_agent_mapping = default_policy_agent_mapping
 
@@ -363,6 +394,8 @@ def rollout(agent,
         prev_rewards = collections.defaultdict(lambda: 0.)
         done = False
         reward_total = 0.0
+        prev_nearest_agent = None
+        nearest_agent = None
         while not done and keep_going(steps, num_steps, episodes,
                                       num_episodes):
             multi_obs = obs if multiagent else {_DUMMY_AGENT_ID: obs}
@@ -375,7 +408,16 @@ def rollout(agent,
                                      agent_states, prev_actions, prev_rewards, policy_agent_mapping)
 
             action = action if multiagent else action[_DUMMY_AGENT_ID]
+
             next_obs, reward, done, info = env.step(action)
+
+            # Set shotter
+            # print(env.env.env.env._env.observation())
+
+            if prev_nearest_agent is None or prev_nearest_agent == get_nearest_agent_from_ball(env):
+                nearest_agent = prev_nearest_agent
+            prev_nearest_agent = get_nearest_agent_from_ball(env)
+            print(prev_nearest_agent, get_ball_owned_player(env))
 
             if multiagent:
                 for agent_id, r in reward.items():
@@ -394,6 +436,12 @@ def rollout(agent,
             saver.append_step(obs, action, next_obs, reward, done, info)
             steps += 1
             obs = next_obs
+
+        shotter = None
+        if reward_total > 0.0:
+            shotter = nearest_agent
+        print(shotter)
+
         saver.end_rollout()
         print("Episode #{}: reward: {}".format(episodes, reward_total))
 
@@ -513,5 +561,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Register custom envs
     register_env("gfootball", lambda _: RllibGFootball(
-        num_agents=3, env_name=args.scenario_name))
+        num_agents=3, env_name=args.scenario_name, render=(not args.no_render)))
     run(args, parser)
