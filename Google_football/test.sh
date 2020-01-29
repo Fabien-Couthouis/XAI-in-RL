@@ -1,2 +1,1 @@
-python rollout.py models/PPO/shapley_adversary/checkpoint_2250/checkpoint-2250 --env gfootball --run PPO --scenario-name "shapley_adversary" --episodes 100 --steps 10000 
-
+python rollout.py models/PPO/shapley_no_adversary/checkpoint_100/checkpoint-100 --env gfootball --run PPO --scenario-name "shapley_adversary" --episodes 20 --steps 10000 --compute-shapley

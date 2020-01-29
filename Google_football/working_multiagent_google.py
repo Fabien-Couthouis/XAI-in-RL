@@ -16,10 +16,12 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--num-agents', type=int, default=4)
 parser.add_argument('--num-policies', type=int, default=4)
-parser.add_argument('--num-iters', type=int, default=4000)
+parser.add_argument('--num-iters', type=int, default=1000)
 parser.add_argument('--simple', action='store_true')
+parser.add_argument(
+    "--scenario-name", default="shapley_no_adversary", help="Change scenario name.")
 
-CHECKPOINT_PATH = "./multiagent-checkpoint-100"
+CHECKPOINT_PATH = "./multiagent-checkpoint"
 
 
 class RllibGFootball(MultiAgentEnv):
@@ -90,8 +92,9 @@ if __name__ == '__main__':
 
     # Simple environment with `num_agents` independent players
     register_env('g_football', lambda _: RllibGFootball(
-        args.num_agents, render=False))
-    single_env = RllibGFootball(args.num_agents, render=False)
+        args.num_agents, args.scenario_name, render=False))
+    single_env = RllibGFootball(
+        args.num_agents, args.scenario_name, render=False)
     obs_space = single_env.observation_space
     act_space = single_env.action_space
 

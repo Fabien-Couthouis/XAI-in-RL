@@ -99,7 +99,10 @@ def play(env, coalition=None, behaviour_nets=None, num_episodes=2000, max_steps_
         episode_rewards.clear()
         total_rewards.append(sum_rewards)
         # print("End of episode ", episode, "\nTotal reward is ", sum_rewards)
-    return total_rewards if not return_goal_agents else total_rewards, goal_agents
+    if not return_goal_agents:
+        return total_rewards
+    else:
+        return total_rewards, goal_agents
 
 
 def get_combinations(features):
@@ -228,7 +231,7 @@ if __name__ == "__main__":
     # colors = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)]
     for i in range(env.get_num_of_agents()):
         env.world.entities[i].color = colors[i]
-    model_path = "model_save/simple_tag_maddpg_random_prey/model.pt"
+    model_path = "model_save/simple_tag_maddpg/model.pt"
     model_path_good = "model_save/simple_tag_independent_ddpg_good/model.pt"
     model_path_medium = "model_save/simple_tag_independent_ddpg_medium/model.pt"
     model_path_bad = "model_save/simple_tag_independent_ddpg_bad/model.pt"
@@ -237,21 +240,20 @@ if __name__ == "__main__":
     #     model_path_medium), load_model(
     #     model_path_bad)]
 
-    # behaviour_nets = [load_model(model_path)]
-    # shapley_values = shapley_values(env, behaviour_nets, 100)
+    behaviour_nets = [load_model(model_path)]
+    shapley_values = shapley_values(env, behaviour_nets, 100)
 
-    # print(shapley_values)
+    print(shapley_values)
 
-    # _, agents = play(env, behaviour_nets=behaviour_nets,
-    #                  num_episodes=100, return_goal_agents=True, render=False)
+    # agents = play(env, behaviour_nets=behaviour_nets, num_episodes=100)
     # print(agents)
     # print("1", agents.count('agent 0'))
     # print("2", agents.count('agent 1'))
     # print("3", agents.count('agent 2'))
-    labels = ["Well trained", "Mediumly trained", "Poorly trained"]
+    # labels = ["Well trained", "Mediumly trained", "Poorly trained"]
 
-    eat = [44, 32, 24]
-    plot_piechart(labels, eat, colors)
+    # eat = [44, 32, 24]
+    # plot_piechart(labels, eat, colors)
 
     # plot_barchart([0.44144144, 0.34684685, 0.21171171], colors, [
     #               "Turing (middle)", "Meitner (top)", "Einstein (bottom)"])

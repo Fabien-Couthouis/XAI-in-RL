@@ -230,11 +230,13 @@ def create_parser(parser_creator=None):
     parser.add_argument(
         "--compute-shapley",
         default=False,
+        action="store_true",
         help="Compute Shapley values.")
     parser.add_argument(
         "--scenario-name",
         default="shapley_no_adversary",
         help="Change scenario name.")
+
     return parser
 
 
@@ -349,7 +351,7 @@ def rollout(agent,
             no_render=True,
             monitor=False,
             coalition=None):
-    " Play game "
+    'Play game'
 
     policy_agent_mapping = default_policy_agent_mapping
 
@@ -394,8 +396,6 @@ def rollout(agent,
         prev_rewards = collections.defaultdict(lambda: 0.)
         done = False
         reward_total = 0.0
-        prev_nearest_agent = None
-        nearest_agent = None
         while not done and keep_going(steps, num_steps, episodes,
                                       num_episodes):
             multi_obs = obs if multiagent else {_DUMMY_AGENT_ID: obs}
@@ -410,14 +410,6 @@ def rollout(agent,
             action = action if multiagent else action[_DUMMY_AGENT_ID]
 
             next_obs, reward, done, info = env.step(action)
-
-            # Set shotter
-            # print(env.env.env.env._env.observation())
-
-            if prev_nearest_agent is None or prev_nearest_agent == get_nearest_agent_from_ball(env):
-                nearest_agent = prev_nearest_agent
-            prev_nearest_agent = get_nearest_agent_from_ball(env)
-            print(prev_nearest_agent, get_ball_owned_player(env))
 
             if multiagent:
                 for agent_id, r in reward.items():
@@ -437,12 +429,8 @@ def rollout(agent,
             steps += 1
             obs = next_obs
 
-        shotter = None
-        if reward_total > 0.0:
-            shotter = nearest_agent
-        print(shotter)
-
         saver.end_rollout()
+
         print("Episode #{}: reward: {}".format(episodes, reward_total))
 
         if done:
@@ -510,8 +498,10 @@ def shapley_values(env_name, agent_nb, agent, num_steps=10, num_episodes=1):
 
     result = np.divide(shapley_values, np.math.factorial(agent_nb))
     norm_result = np.divide(result, sum(result))
-    print(norm_result)
-    return norm_result
+    print("Normalized Shapley values:", norm_result)
+    print("Shapley values:", result)
+
+    return result
 
 
 def take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_actions, prev_rewards, policy_agent_mapping):
