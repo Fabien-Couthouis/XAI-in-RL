@@ -16,7 +16,6 @@ conda env create -f conda_env_football.yml
 
 ## Google football environment installation
 ```
-git clone https://github.com/google-research/football.git
-cd football
+cd gfootball_env
 pip3 install .
 ```
