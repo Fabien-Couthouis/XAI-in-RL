@@ -236,6 +236,10 @@ def create_parser(parser_creator=None):
         "--scenario-name",
         default="shapley_no_adversary",
         help="Change scenario name.")
+    parser.add_argument(
+        "--num-agents",
+        default=11,
+        help="Change number of agents.")
 
     return parser
 
