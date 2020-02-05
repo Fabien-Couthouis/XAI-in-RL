@@ -86,9 +86,19 @@ class RllibGFootball(MultiAgentEnv):
         print(self.env.observation())
 
 
+def gen_policy(_):
+    return (None, obs_space, act_space, {})
+
+
+def gib_to_octets(gib):
+    'Convert Gib value to octets'
+    return gib*100*1024 * 1024
+
+
 if __name__ == '__main__':
     args = parser.parse_args()
-    ray.init(num_gpus=1)
+    ray.init(num_gpus=1, object_store_memory=gib_to_octets(
+        7), redis_max_memory=gib_to_octets(3))
 
     # Simple environment with `num_agents` independent players
     register_env('g_football', lambda _: RllibGFootball(
@@ -97,9 +107,6 @@ if __name__ == '__main__':
         args.num_agents, args.scenario_name, render=False)
     obs_space = single_env.observation_space
     act_space = single_env.action_space
-
-    def gen_policy(_):
-        return (None, obs_space, act_space, {})
 
     # Setup PPO with an ensemble of `num_policies` different policies
     policies = {
@@ -118,12 +125,13 @@ if __name__ == '__main__':
             'clip_rewards': False,
             'vf_clip_param': 10.0,
             'entropy_coeff': 0.01,
-            'train_batch_size': 2000,
-            'sample_batch_size': 100,
-            'sgd_minibatch_size': 500,
+            'train_batch_size': 32,
+            'sample_batch_size': 16,
+            'sgd_minibatch_size': 16,
             'num_sgd_iter': 10,
-            'num_workers': 3,
-            'num_envs_per_worker': 1,
+            'num_workers': 1,
+            'num_envs_per_worker': 5,
+            'num_cpus_per_worker': 3,
             'batch_mode': 'truncate_episodes',
             'observation_filter': 'NoFilter',
             'vf_share_layers': 'true',

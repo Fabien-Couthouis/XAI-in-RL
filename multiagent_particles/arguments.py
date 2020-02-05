@@ -7,7 +7,7 @@ from auxm import *
 
 
 '''define the model name'''
-model_name = 'maddpg'
+model_name = 'independent_ddpg'
 
 '''define the scenario name'''
 scenario_name = 'simple_tag'

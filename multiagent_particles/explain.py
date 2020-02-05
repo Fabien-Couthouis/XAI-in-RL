@@ -6,6 +6,7 @@ import torch
 import time
 import matplotlib.pyplot as plt
 import seaborn as sns
+import random
 from itertools import combinations, permutations
 from utilities.env_wrapper import EnvWrapper
 from utilities.util import *
@@ -115,6 +116,43 @@ def get_combinations(features):
     return combinations_list
 
 
+def get_combinations_for_feature(features, feature_id):
+    combinations = get_combinations(features)
+    with_player, without_player = [], []
+    for feature in combinations:
+        if feature_id in feature:
+            with_player.append(feature)
+        else:
+            without_player.append(feature)
+
+    return with_player, without_player
+
+
+def monte_carlo_shapley_estimation(env, behaviour_nets, M, num_episodes=1):
+    estimated_values = []
+    features = range(env.get_num_of_agents())
+    for feature in features:
+        with_player, without_player = get_combinations_for_feature(
+            features, feature)
+        marginal_contributions = []
+        for m in range(M):
+            coalition_with_player = random.choice(with_player)
+            coalition_without_player = random.choice(without_player)
+
+            value_with_player = play(env, coalition=coalition_with_player,
+                                     behaviour_nets=behaviour_nets, num_episodes=num_episodes, render=False)
+            value_without_player = play(env, coalition=coalition_without_player,
+                                        behaviour_nets=behaviour_nets, num_episodes=num_episodes, render=False)
+
+            marginal_contribution = (
+                sum(value_with_player)-sum(value_without_player))/num_episodes
+            marginal_contributions.append(marginal_contribution)
+
+        estimated_values.append(mean(marginal_contributions))
+
+    return estimated_values
+
+
 def get_marginal_contributions(env, features, num_episodes, behaviour_nets):
     'Get mean reward for each agent for each coalitions '
     coalition_values = dict()
@@ -181,8 +219,8 @@ def plot_barchart(values, colors, agents):
     for i, val in enumerate(values):
         plt.text(val if val < 0 else 0, i, str(round(val, 2)), fontsize=17)
 
-    plt.xlabel("Contribution of each agent: Shapley value", fontsize=20)
-    plt.ylabel("Agent", fontsize=20)
+    plt.xlabel("Contribution of each agent: Shapley value", fontsize=15)
+    plt.ylabel("")
 
     plt.show()
 
@@ -215,7 +253,7 @@ def plot_lines(b_nets, colors):
 def plot_piechart(labels, values, colors):
     fig1, ax1 = plt.subplots()
     ax1.pie(values, labels=labels, autopct='%1.1f%%', startangle=90,
-            colors=colors, textprops={'fontsize': 14})
+            colors=colors, textprops={'fontsize': 10})
     # Equal aspect ratio ensures that pie is drawn as a circle.
     ax1.axis('equal')
 
@@ -226,34 +264,48 @@ if __name__ == "__main__":
     # To change model type, copy-paste arguments from arguments_model_type.py to arguments.py!
 
     env = EnvWrapper("simple_tag", random_prey=True)
-    colors = [(245/255, 121/255, 58/255), (169/255, 90 /
-                                           255, 161/255), (133/255, 192/255, 249/255)]
+    # colors = [(245/255, 121/255, 58/255), (169/255, 90 /
+    #                                        255, 161/255), (133/255, 192/255, 249/255), (0.8, 0.8, 0.8)]
     # colors = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)]
-    for i in range(env.get_num_of_agents()):
-        env.world.entities[i].color = colors[i]
-    model_path = "model_save/simple_tag_maddpg/model.pt"
+    # for i in range(env.get_num_of_agents()):
+    #     env.world.entities[i].color = colors[i]
+    # model_path = "model_save/simple_tag_maddpg/model.pt"
     model_path_good = "model_save/simple_tag_independent_ddpg_good/model.pt"
     model_path_medium = "model_save/simple_tag_independent_ddpg_medium/model.pt"
     model_path_bad = "model_save/simple_tag_independent_ddpg_bad/model.pt"
 
-    # behaviour_nets = [load_model(model_path_good), load_model(
-    #     model_path_medium), load_model(
-    #     model_path_bad)]
+    behaviour_nets = [load_model(model_path_good), load_model(
+        model_path_medium), load_model(
+        model_path_bad)]
 
-    behaviour_nets = [load_model(model_path)]
-    shapley_values = shapley_values(env, behaviour_nets, 100)
+    # behaviour_nets = [load_model(model_path)]
+    start = time.time()
+    shapley_values = shapley_values(
+        env, behaviour_nets, num_episodes=100)
+    print("TRUE")
 
     print(shapley_values)
+    print("time:", time.time()-start)
+
+    start = time.time()
+
+    shapley_values_est = monte_carlo_shapley_estimation(
+        env, behaviour_nets, 100, num_episodes=1)
+    print("EST")
+
+    print(shapley_values_est)
+    print("time:", time.time()-start)
 
     # agents = play(env, behaviour_nets=behaviour_nets, num_episodes=100)
     # print(agents)
     # print("1", agents.count('agent 0'))
     # print("2", agents.count('agent 1'))
     # print("3", agents.count('agent 2'))
-    # labels = ["Well trained", "Mediumly trained", "Poorly trained"]
+    # labels = ["Turing (middle)", "Meitner (top)",
+    #           "Einstein (bottom)", "No goal"]
 
-    # eat = [44, 32, 24]
-    # plot_piechart(labels, eat, colors)
+    # goal = [1, 11, 7, 100-11-7-1]
+    # plot_piechart(labels, goal, colors)
 
     # plot_barchart([0.44144144, 0.34684685, 0.21171171], colors, [
     #               "Turing (middle)", "Meitner (top)", "Einstein (bottom)"])

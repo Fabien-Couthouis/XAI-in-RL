@@ -8,6 +8,7 @@ import argparse
 import collections
 import json
 import os
+import random
 import pickle
 import shelve
 import numpy as np
@@ -20,7 +21,7 @@ from ray.rllib.env import MultiAgentEnv
 from ray.rllib.env.base_env import _DUMMY_AGENT_ID
 from ray.rllib.evaluation.episode import _flatten_action
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
-from ray.tune.util import merge_dicts
+from ray.rllib.utils import merge_dicts
 from working_multiagent_google import RllibGFootball
 from ray.tune.registry import register_env
 from itertools import combinations, permutations
@@ -196,7 +197,7 @@ def create_parser(parser_creator=None):
         const=True,
         help="Wrap environment in gym Monitor to record video.")
     parser.add_argument(
-        "--steps", default=10000, help="Number of steps to roll out.")
+        "--steps", default=1, help="Number of steps to roll out.")
     parser.add_argument("--out", default=None, help="Output filename.")
     parser.add_argument(
         "--config",
@@ -283,8 +284,8 @@ def run(args, parser):
             target_episodes=num_episodes,
             save_info=args.save_info) as saver:
         if args.compute_shapley:
-            shapley_values(args.env, env.num_agents,
-                           agent, num_steps, num_episodes)
+            monte_carlo_shapley_estimation(args.env, env.num_agents,
+                                           agent, num_steps, num_episodes)
         else:
             rollout(agent, args.env, num_steps, num_episodes, saver,
                     args.no_render, args.monitor)
@@ -454,6 +455,48 @@ def get_combinations(features):
     return combinations_list
 
 
+def get_combinations_for_feature(features, feature_id):
+    combinations = get_combinations(features)
+    with_player, without_player = [], []
+    for feature in combinations:
+        if feature_id in feature:
+            with_player.append(feature)
+        else:
+            without_player.append(feature)
+
+    return with_player, without_player
+
+
+def monte_carlo_shapley_estimation(env_name, n_agents, agent, num_steps=10, num_episodes=1, M=100):
+    'Monte Carlo estimation of shapley values (o(M*n_agents) complexity)'
+    estimated_values = []
+    features = range(n_agents)
+    for feature in features:
+        with_player, without_player = get_combinations_for_feature(
+            features, feature)
+        marginal_contributions = []
+        for m in range(M):
+            coalition_with_player = random.choice(with_player)
+            coalition_without_player = random.choice(without_player)
+
+            value_with_player = rollout(
+                agent, env_name, num_steps, num_episodes, coalition=coalition_with_player)
+            value_without_player = rollout(
+                agent, env_name, num_steps, num_episodes, coalition=coalition_without_player)
+
+            marginal_contribution = (
+                sum(value_with_player)-sum(value_without_player))/num_episodes
+            marginal_contributions.append(marginal_contribution)
+
+        estimated_values.append(mean(marginal_contributions))
+
+    norm_estimated_values = np.divide(estimated_values, sum(estimated_values))
+    print("Normalized Shapley values:", estimated_values)
+    print("Shapley values:", estimated_values)
+
+    return estimated_values
+
+
 def get_marginal_contributions(env_name, features, num_steps, num_episodes, agent):
     'Get mean reward for each agent for each coalitions '
     coalition_values = dict()
@@ -467,9 +510,9 @@ def get_marginal_contributions(env_name, features, num_steps, num_episodes, agen
     return coalition_values
 
 
-def shapley_values(env_name, agent_nb, agent, num_steps=10, num_episodes=1):
+def shapley_values(env_name, n_agents, agent, num_steps=10, num_episodes=1):
     'Naive implementation (not optimized at all)'
-    agents_ids = range(agent_nb)
+    agents_ids = range(n_agents)
     coalition_values = get_marginal_contributions(
         env_name, agents_ids, num_steps, num_episodes, agent)
     shapley_values = []
