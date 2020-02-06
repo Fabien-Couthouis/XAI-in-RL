@@ -16,14 +16,8 @@
 // i do not offer support, so don't ask. to be used for inspiration :)
 
 #include "opengl_renderer3d.hpp"
-
-#ifdef __APPLE__
-#include <SDL2/SDL_opengl.h>
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#else
 #include <GL/glu.h>
-#endif
+
 #include <cmath>
 #include "wrap_SDL.h"
 
@@ -89,6 +83,8 @@ void OpenGLRenderer3D::RenderOverlay2D(
   DO_VALIDATION;
 
   assert(context);
+
+
 
   mapping.glMatrixMode(GL_PROJECTION);
   mapping.glPushMatrix();
@@ -246,6 +242,8 @@ void OpenGLRenderer3D::RenderLights(std::deque<LightQueueEntry> &lightQueue,
     DO_VALIDATION;
     const LightQueueEntry &light = (*lightIter);
 
+
+
     // bind shadow map
     SetUniformInt(currentShader->first, "has_shadow", (int)light.hasShadow);
     if (light.hasShadow) {
@@ -392,6 +390,7 @@ bool OpenGLRenderer3D::CreateContext(int width, int height, int bpp,
   // SDL_GL_CONTEXT_PROFILE_CORE);
 
 
+
   //    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   //    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
   //    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
@@ -517,6 +516,7 @@ void OpenGLRenderer3D::Exit() {
   currentShader = shaders.end();
 
   // assert(views.size() == 0);
+
 }
 
 int OpenGLRenderer3D::CreateView(float x_percent, float y_percent,
@@ -780,6 +780,7 @@ void OpenGLRenderer3D::SetDepthMask(bool OnOff) {
 
 void OpenGLRenderer3D::SetTextureMode(e_TextureMode textureMode) {
   DO_VALIDATION;
+
   switch (textureMode) {
     DO_VALIDATION;
 
@@ -1033,6 +1034,7 @@ void OpenGLRenderer3D::UpdateVertexBuffer(VertexBufferID vertexBufferID,
   mapping.glBindBuffer(
       GL_ARRAY_BUFFER,
       writeVertexBufferID);
+
   // glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), vertices,
   // GL_DYNAMIC_DRAW);
 
@@ -1919,11 +1921,7 @@ void LoadGLShader(GLuint shaderID, const std::string &filename) {
   if (blen > 1) {
     DO_VALIDATION;
     GLchar *compiler_log = (GLchar *)malloc(blen);
-#ifdef __APPLE__
-    mapping.glGetInfoLogARB((void *)&shaderID, blen, &slen, compiler_log);
-#else
     mapping.glGetInfoLogARB(shaderID, blen, &slen, compiler_log);
-#endif
     printf("shader compilation info: %s\n", compiler_log);
     Log(e_Warning, "", "LoadGLShader",
         "shader compilation info (" + filename + "):\n" +

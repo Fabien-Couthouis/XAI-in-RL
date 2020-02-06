@@ -197,7 +197,7 @@ def create_parser(parser_creator=None):
         const=True,
         help="Wrap environment in gym Monitor to record video.")
     parser.add_argument(
-        "--steps", default=1, help="Number of steps to roll out.")
+        "--steps", default=100, help="Number of steps to roll out.")
     parser.add_argument("--out", default=None, help="Output filename.")
     parser.add_argument(
         "--config",
@@ -239,7 +239,7 @@ def create_parser(parser_creator=None):
         help="Change scenario name.")
     parser.add_argument(
         "--num-agents",
-        default=11,
+        default=3,
         help="Change number of agents.")
 
     return parser
@@ -467,15 +467,31 @@ def get_combinations_for_feature(features, feature_id):
     return with_player, without_player
 
 
-def monte_carlo_shapley_estimation(env_name, n_agents, agent, num_steps=10, num_episodes=1, M=100):
-    'Monte Carlo estimation of shapley values (o(M*n_agents) complexity)'
+def monte_carlo_shapley_estimation(env_name, n_agents, agent, num_steps=0, num_episodes=1, M=100):
+    """
+    Monte Carlo estimation of shapley values (o(M*n_agents) complexity).
+    Parameters:
+        M: Number of coalitions to evaluate for each player (optional, default=100)
+        See rollout function for other parameters.
+    """
+
+    # Episodes override steps in the API, so we keep this behaviour here
+    if num_episodes != 0:
+        print("Starting Shapley value estimation on:", n_agents,
+              "agents,", num_episodes, "episodes, M=", M)
+    else:
+        print("Starting Shapley value estimation on:",
+              n_agents, "agents,", num_steps, "steps, M=", M)
+
     estimated_values = []
     features = range(n_agents)
     for feature in features:
+        print(f"Starting computation for agent {feature}")
         with_player, without_player = get_combinations_for_feature(
             features, feature)
         marginal_contributions = []
         for m in range(M):
+            print(f"Step {m}/{M} for Agent {feature}:")
             coalition_with_player = random.choice(with_player)
             coalition_without_player = random.choice(without_player)
 
@@ -491,7 +507,7 @@ def monte_carlo_shapley_estimation(env_name, n_agents, agent, num_steps=10, num_
         estimated_values.append(mean(marginal_contributions))
 
     norm_estimated_values = np.divide(estimated_values, sum(estimated_values))
-    print("Normalized Shapley values:", estimated_values)
+    print("Normalized Shapley values:", norm_estimated_values)
     print("Shapley values:", estimated_values)
 
     return estimated_values
@@ -598,5 +614,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Register custom envs
     register_env("gfootball", lambda _: RllibGFootball(
-        num_agents=3, env_name=args.scenario_name, render=(not args.no_render)))
+        num_agents=args.num_agents, env_name=args.scenario_name, render=(not args.no_render)))
     run(args, parser)

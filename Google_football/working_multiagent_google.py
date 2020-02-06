@@ -30,8 +30,8 @@ class RllibGFootball(MultiAgentEnv):
     def __init__(self, num_agents, env_name, render=True):
         self.env = football_env.create_environment(
             env_name=env_name, stacked=False,
-            logdir='/tmp/rllib_test',
-            write_goal_dumps=False, write_full_episode_dumps=False, render=render,
+            logdir='./replays', write_video=True,
+            write_goal_dumps=True, write_full_episode_dumps=True, render=render,
             dump_frequency=0,
             number_of_left_players_agent_controls=num_agents,
             channel_dimensions=(42, 42))
@@ -129,9 +129,9 @@ if __name__ == '__main__':
             'sample_batch_size': 16,
             'sgd_minibatch_size': 16,
             'num_sgd_iter': 10,
-            'num_workers': 1,
-            'num_envs_per_worker': 5,
-            'num_cpus_per_worker': 3,
+            'num_workers': 3,
+            'num_envs_per_worker': 1,
+            'num_cpus_per_worker': 1,
             'batch_mode': 'truncate_episodes',
             'observation_filter': 'NoFilter',
             'vf_share_layers': 'true',
