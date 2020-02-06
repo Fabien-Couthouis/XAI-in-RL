@@ -27,11 +27,11 @@ CHECKPOINT_PATH = "./multiagent-checkpoint"
 class RllibGFootball(MultiAgentEnv):
     """An example of a wrapper for GFootball to make it compatible with rllib."""
 
-    def __init__(self, num_agents, env_name, render=True):
+    def __init__(self, num_agents, env_name, render=True, save_replays=False):
         self.env = football_env.create_environment(
             env_name=env_name, stacked=False,
-            logdir='./replays', write_video=False,
-            write_goal_dumps=False, write_full_episode_dumps=False, render=render,
+            logdir='./replays', write_video=save_replays,
+            write_goal_dumps=save_replays, write_full_episode_dumps=save_replays, render=render,
             dump_frequency=0,
             number_of_left_players_agent_controls=num_agents,
             channel_dimensions=(42, 42))

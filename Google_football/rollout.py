@@ -241,6 +241,11 @@ def create_parser(parser_creator=None):
         "--num-agents",
         default=3,
         help="Change number of agents.")
+    parser.add_argument(
+        "--save-replays",
+        default=False,
+        action="store_true",
+        help="Save dump replays, goals and videos.")
 
     return parser
 
@@ -614,5 +619,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Register custom envs
     register_env("gfootball", lambda _: RllibGFootball(
-        num_agents=args.num_agents, env_name=args.scenario_name, render=(not args.no_render)))
+        num_agents=args.num_agents, env_name=args.scenario_name, render=(not args.no_render), save_replays = args.save_replays))
     run(args, parser)
