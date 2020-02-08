@@ -1,1 +1,1 @@
-python rollout.py models/PPO/shapley_adversary/checkpoint_2250/checkpoint-2250 --env gfootball --run PPO --scenario-name "shapley_adversary" --episodes 10  --no-render --save-replays #--compute-shapley
+python rollout.py models/PPO/11_vs_11_easy_stochastic/checkpoint_10000/checkpoint-10000 --env gfootball --run PPO --scenario-name "11_vs_11_easy_stochastic" --episodes 10 --num-agents 11 #--save-replays --compute-shapley

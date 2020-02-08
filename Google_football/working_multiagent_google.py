@@ -14,12 +14,12 @@ from ray.tune.registry import register_env
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--num-agents', type=int, default=4)
-parser.add_argument('--num-policies', type=int, default=4)
-parser.add_argument('--num-iters', type=int, default=1000)
+parser.add_argument('--num-agents', type=int, default=11)
+parser.add_argument('--num-policies', type=int, default=11)
+parser.add_argument('--num-iters', type=int, default=10000)
 parser.add_argument('--simple', action='store_true')
 parser.add_argument(
-    "--scenario-name", default="shapley_no_adversary", help="Change scenario name.")
+    "--scenario-name", default="11_vs_11_easy_stochastic", help="Change scenario name.")
 
 CHECKPOINT_PATH = "./multiagent-checkpoint"
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     tune.run(
         'PPO',
         stop={'training_iteration': args.num_iters},
-        checkpoint_freq=50,
+        checkpoint_freq=100,
         config={
             'env': 'g_football',
             'lambda': 0.95,
@@ -137,6 +137,7 @@ if __name__ == '__main__':
             'vf_share_layers': 'true',
             'num_gpus': 1,
             'lr': 2.5e-4,
+            'use_pytorch': 'true',
             'log_level': 'WARN',
             'simple_optimizer': args.simple,
             'multiagent': {
