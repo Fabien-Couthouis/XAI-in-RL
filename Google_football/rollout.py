@@ -323,36 +323,6 @@ def keep_going(steps, num_steps, episodes, num_episodes):
     return True
 
 
-def get_ball_owned_player(env):
-    obs = env.env.env.env._env.observation()  # Thanks google
-    return obs['ball_owned_player']
-
-
-def get_nearest_agent_from_ball(env, team="left_team"):
-    obs = env.env.env.env._env.observation()
-    ball_x, ball_y, ball_z = obs["ball"]
-    agents_positions = obs[team]
-    nearest_agent = None
-    min_dist = None
-    for i, (x, y) in enumerate(agents_positions):
-        dist = euclidean([ball_x, x], [ball_y, y])
-        # print("i", i, dist)
-
-        # print(dist)
-        if min_dist is None or dist < min_dist:
-            min_dist = dist
-            nearest_agent = i-1  # do not take goal in account
-    return nearest_agent
-
-
-def get_ball_owned_team(env):
-    obs = env.env.env.env._env.observation()
-    if obs['ball_owned_team'] == -1:
-        return None
-    else:
-        return "right" if obs['ball_owned_team'] == 1 else "left"
-
-
 def rollout(agent,
             env_name,
             num_steps,
@@ -619,5 +589,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Register custom envs
     register_env("gfootball", lambda _: RllibGFootball(
-        num_agents=int(args.num_agents), env_name=args.scenario_name, render=(not args.no_render), save_replays = args.save_replays))
+        num_agents=int(args.num_agents), env_name=args.scenario_name, render=(not args.no_render), save_replays=args.save_replays))
     run(args, parser)
