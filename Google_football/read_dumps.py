@@ -36,7 +36,7 @@ def get_ball_owned_team(obs):
 
 def get_empty_player_dict(file_path, team="left"):
     dumps = get_dumps(file_path)
-    obs = dump[0]['observation']
+    obs = dumps[0]['observation']
     players = obs[f"{team}_agent_controlled_player"]
     return {player: 0 for player in players}
 
@@ -59,7 +59,7 @@ def get_players_n_goals(file_path, team="left"):
         if get_ball_owned_team(obs) == team:
             scorer = obs['ball_owned_player']
 
-    return scorers
+    return player_n_goals
 
 
 def get_steps_per_player(file_path, team="left"):
@@ -101,7 +101,7 @@ def show_one(file_path, show_all=False):
                     print(dump['debug']['action'])
 
                     print("team", obs['ball_owned_team'],
-                        "player", obs['ball_owned_player'], "\n")
+                          "player", obs['ball_owned_player'], "\n")
 
 
 show_one("episode_done_20200218-194207134742.dump", False)
