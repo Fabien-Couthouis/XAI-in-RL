@@ -126,6 +126,7 @@ if __name__ == '__main__':
         'PPO',
         stop={'training_iteration': args.num_iters},
         checkpoint_freq=100,
+        restore='models/11_vs_11_easy_stochastic3/checkpoint_110500/checkpoint-110500',
         config={
             'env': 'g_football',
             'lambda': 0.95,
