@@ -234,6 +234,11 @@ def create_parser(parser_creator=None):
         action="store_true",
         help="Compute Shapley values.")
     parser.add_argument(
+        "--idle-missing-agents",
+        default=False,
+        action="store_true",
+        help="Replace missing (from the coalition) agents by idle agents instead of random ones in Shapley value computation.")
+    parser.add_argument(
         "--scenario-name",
         default="shapley_no_adversary",
         help="Change scenario name.")
@@ -289,8 +294,12 @@ def run(args, parser):
             target_episodes=num_episodes,
             save_info=args.save_info) as saver:
         if args.compute_shapley:
+            if args.idle_missing_agents:
+                replace_missing_agents = "idle"
+            else:
+                replace_missing_agents = "random"
             monte_carlo_shapley_estimation(args.env, env.num_agents,
-                                           agent, num_steps, num_episodes)
+                                           agent, num_steps, num_episodes, replace_missing_agents=replace_missing_agents)
         else:
             rollout(agent, args.env, num_steps, num_episodes, saver,
                     args.no_render, args.monitor)
@@ -330,7 +339,8 @@ def rollout(agent,
             saver=RolloutSaver(),
             no_render=True,
             monitor=False,
-            coalition=None):
+            coalition=None,
+            replace_missing_agents="random"):
     'Play game'
 
     policy_agent_mapping = default_policy_agent_mapping
@@ -382,7 +392,7 @@ def rollout(agent,
 
             if coalition is not None:
                 action = take_actions_for_coalition(env, agent, multi_obs, mapping_cache, use_lstm,
-                                                    agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition)
+                                                    agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition, replace_missing_agents)
             else:
                 action = take_action(agent, multi_obs, mapping_cache, use_lstm,
                                      agent_states, prev_actions, prev_rewards, policy_agent_mapping)
@@ -442,11 +452,13 @@ def get_combinations_for_feature(features, feature_id):
     return with_player, without_player
 
 
-def monte_carlo_shapley_estimation(env_name, n_agents, agent, num_steps=0, num_episodes=1, M=100):
+def monte_carlo_shapley_estimation(env_name, n_agents, agent, num_steps=0, num_episodes=1, M=100, replace_missing_agents="random"):
     """
     Monte Carlo estimation of shapley values (o(M*n_agents) complexity).
     Parameters:
-        M: Number of coalitions to evaluate for each player (optional, default=100)
+        M (optional, default=100): Number of coalitions to evaluate for each player 
+        replace_missing_agents (optional, default="random"): "random" to replace an agent absent from the coalition by random actions
+            or "idle" to let it doing nothing
         See rollout function for other parameters.
     """
 
@@ -473,7 +485,7 @@ def monte_carlo_shapley_estimation(env_name, n_agents, agent, num_steps=0, num_e
             value_with_player = rollout(
                 agent, env_name, num_steps, num_episodes, coalition=coalition_with_player)
             value_without_player = rollout(
-                agent, env_name, num_steps, num_episodes, coalition=coalition_without_player)
+                agent, env_name, num_steps, num_episodes, coalition=coalition_without_player, replace_missing_agents=replace_missing_agents)
 
             marginal_contribution = (
                 sum(value_with_player)-sum(value_without_player))/num_episodes
@@ -488,12 +500,12 @@ def monte_carlo_shapley_estimation(env_name, n_agents, agent, num_steps=0, num_e
     return estimated_values
 
 
-def get_marginal_contributions(env_name, features, num_steps, num_episodes, agent):
+def get_marginal_contributions(env_name, features, num_steps, num_episodes, agent, replace_missing_agents):
     'Get mean reward for each agent for each coalitions '
     coalition_values = dict()
     for coalition in get_combinations(features):
         total_rewards = rollout(
-            agent, env_name, num_steps, num_episodes, coalition=coalition)
+            agent, env_name, num_steps, num_episodes, coalition=coalition, replace_missing_agents=replace_missing_agents)
 
         coalition_values[str(coalition)] = round(mean(total_rewards), 2)
     if DEBUG:
@@ -501,11 +513,11 @@ def get_marginal_contributions(env_name, features, num_steps, num_episodes, agen
     return coalition_values
 
 
-def shapley_values(env_name, n_agents, agent, num_steps=10, num_episodes=1):
+def shapley_values(env_name, n_agents, agent, num_steps=10, num_episodes=1, replace_missing_agents="random"):
     'Naive implementation (not optimized at all)'
     agents_ids = range(n_agents)
     coalition_values = get_marginal_contributions(
-        env_name, agents_ids, num_steps, num_episodes, agent)
+        env_name, agents_ids, num_steps, num_episodes, agent, replace_missing_agents)
     shapley_values = []
 
     for agent_id in agents_ids:
@@ -571,17 +583,21 @@ def take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_ac
 
 
 def take_actions_for_coalition(env, agent, multi_obs, mapping_cache, use_lstm,
-                               agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition):
+                               agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition, replace_missing_agents):
     'Return actions where each agent in coalition follow the policy, others play at random'
     actions = take_action(agent, multi_obs, mapping_cache, use_lstm,
                           agent_states, prev_actions, prev_rewards, policy_agent_mapping)
-    random_actions = env.get_random_actions()
+
+    if replace_missing_agents == "random":
+        missing_agents_actions = env.get_random_actions()
+    else:
+        missing_agents_actions = env.get_idle_actions()
 
     for agent_id in coalition:
         key = "agent_"+str(agent_id)
-        random_actions[key] = actions[key]
+        missing_agents_actions[key] = actions[key]
 
-    return random_actions
+    return missing_agents_actions
 
 
 if __name__ == "__main__":

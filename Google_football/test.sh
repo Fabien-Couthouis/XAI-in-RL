@@ -1,1 +1,1 @@
-python rollout.py models/PPO/11_vs_11_easy_stochastic3/checkpoint_110500/checkpoint-110500 --env gfootball --run PPO --scenario-name "11_vs_11_easy_stochastic" --episodes 10 --num-agents 11 #--save-replays --compute-shapley
+python rollout.py models/PPO/11_vs_11_easy_stochastic3/checkpoint_110500/checkpoint-110500 --env gfootball --run PPO --scenario-name "11_vs_11_easy_stochastic" --episodes 2 --num-agents 11 --save-replays --no-render #--compute-shapley --idle-missing-agents

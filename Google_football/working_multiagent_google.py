@@ -82,6 +82,14 @@ class RllibGFootball(MultiAgentEnv):
             agents_actions[key] = self.action_space.sample()
         return agents_actions
 
+    def get_idle_actions(self):
+        'Return: list of idle (no move) actions for each agent '
+        agents_actions = {}
+        for agent_id in range(self.num_agents):
+            key = "agent_"+str(agent_id)
+            agents_actions[key] = "action_idle"
+        return agents_actions
+
     def test(self):
         print(self.env.observation())
 
