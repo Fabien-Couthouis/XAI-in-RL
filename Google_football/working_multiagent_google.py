@@ -87,7 +87,8 @@ class RllibGFootball(MultiAgentEnv):
         agents_actions = {}
         for agent_id in range(self.num_agents):
             key = "agent_"+str(agent_id)
-            agents_actions[key] = "action_idle"
+            action_idle = 0
+            agents_actions[key] = action_idle
         return agents_actions
 
     def test(self):
