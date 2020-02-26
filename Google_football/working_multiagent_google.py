@@ -18,6 +18,7 @@ parser.add_argument('--num-agents', type=int, default=11)
 parser.add_argument('--num-policies', type=int, default=11)
 parser.add_argument('--num-iters', type=int, default=10000)
 parser.add_argument('--simple', action='store_true')
+parser.add_argument('--no-resume', action='store_true')
 parser.add_argument(
     "--scenario-name", default="11_vs_11_easy_stochastic", help="Change scenario name.")
 
