@@ -29,6 +29,9 @@ python working_multiagent_google.py --scenario-name "11_vs_11_stochastic" --num-
 This will create files called "checkpoints" that will be used to store model weights every fifty iterations.
 They will be located on `~/ray_results/default/...`.
 
+**By default, this script will resume training from the last checkpoint located in the `models` subdirectory.**
+If you don't want this behaviour, just pass the `--no-resume` argument.
+
 ## Evaluating an agent
 
 You can evaluate a trained agent by running the `rollout.py` script and passing the path to your model checkpoint file as an argument. Here is an example for a 11 vs 11 match:
