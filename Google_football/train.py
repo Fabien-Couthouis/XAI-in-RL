@@ -17,11 +17,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--num-agents', type=int, default=11)
 parser.add_argument('--num-policies', type=int, default=11)
 parser.add_argument('--num-iters', type=int, default=10000)
+parser.add_argument('--checkpoint-freq', type=int, default=100)
 parser.add_argument('--simple', action='store_true')
 parser.add_argument('--resume', action='store_true')
 parser.add_argument(
     "--scenario-name", default="11_vs_11_easy_stochastic", help="Change scenario name.")
-parser.add_argument('--trainer_algo', type=str, default="PPO", help="PPO|SAC")
+parser.add_argument('--trainer-algo', type=str, default="PPO", help="PPO|SAC")
 
 CHECKPOINT_PATH = "./multiagent-checkpoint"
 
@@ -126,29 +127,30 @@ if __name__ == '__main__':
         tune.run(
             'PPO',
             stop={'training_iteration': args.num_iters},
-            checkpoint_freq=100,
+            checkpoint_freq=args.checkpoint_freq,
             resume=args.resume,
             config={
-                #=== COMMON CONFIG 
-                'env': 'g_football',
+                #=== PPO SPECIFIC CONFIG ===
                 'lambda': 0.95,
                 'kl_coeff': 0.2,
                 'clip_rewards': False,
                 'vf_clip_param': 10.0,
                 'entropy_coeff': 0.01,
-                'train_batch_size': 2000,
-                'sample_batch_size': 16,
                 'sgd_minibatch_size': 16,
                 'num_sgd_iter': 10,
+                'use_pytorch': 'true',
+                'observation_filter': 'NoFilter',
+                'vf_share_layers': 'true',
+                #=== COMMON CONFIG ===
+                'env': 'g_football',
+                'train_batch_size': 2000,
+                'sample_batch_size': 16,
                 'num_workers': 3,
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
                 'batch_mode': 'truncate_episodes',
-                'observation_filter': 'NoFilter',
-                'vf_share_layers': 'true',
                 'num_gpus': 1,
                 'lr': 2.5e-4,
-                'use_pytorch': 'true',
                 'log_level': 'WARN',
                 'simple_optimizer': args.simple,
                 'multiagent': {
@@ -164,7 +166,7 @@ if __name__ == '__main__':
         tune.run(
             'SAC',
             stop={'training_iteration': args.num_iters},
-            checkpoint_freq=100,
+            checkpoint_freq=args.checkpoint_freq,
             resume=args.resume,
             config={
                 #=== SAC SPECIFIC CONFIG ===
@@ -211,6 +213,7 @@ if __name__ == '__main__':
                 'num_gpus': 1,
                 'sample_batch_size': 200,
                 "train_batch_size": 256,
+                'batch_mode': 'truncate_episodes',
                 'lr': 2.5e-4,
                 'log_level': 'WARN',
                 'simple_optimizer': args.simple,
