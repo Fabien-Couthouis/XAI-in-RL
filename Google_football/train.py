@@ -141,6 +141,7 @@ if __name__ == '__main__':
                 'use_pytorch': 'true',
                 'observation_filter': 'NoFilter',
                 'vf_share_layers': 'true',
+                'simple_optimizer': args.simple,
                 #=== COMMON CONFIG ===
                 'env': 'g_football',
                 'train_batch_size': 2000,
@@ -152,7 +153,6 @@ if __name__ == '__main__':
                 'num_gpus': 1,
                 'lr': 2.5e-4,
                 'log_level': 'WARN',
-                'simple_optimizer': args.simple,
                 'multiagent': {
                     'policies': policies,
                     'policy_mapping_fn': tune.function(
@@ -216,7 +216,6 @@ if __name__ == '__main__':
                 'batch_mode': 'truncate_episodes',
                 'lr': 2.5e-4,
                 'log_level': 'WARN',
-                'simple_optimizer': args.simple,
                 'multiagent': {
                     'policies': policies,
                     'policy_mapping_fn': tune.function(
