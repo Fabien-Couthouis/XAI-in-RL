@@ -107,7 +107,7 @@ def gib_to_octets(gib):
 if __name__ == '__main__':
     args = parser.parse_args()
     ray.init(num_gpus=1, object_store_memory=gib_to_octets(
-        7), redis_max_memory=gib_to_octets(3))
+        15), redis_max_memory=gib_to_octets(3), lru_evict=True)
 
     register_env('g_football', lambda _: RllibGFootball(
         args.num_agents, args.scenario_name, render=False))
