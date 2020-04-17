@@ -24,12 +24,12 @@ pip3 install .
 You can start training new agents by running the `working_multiagent_google.py` script.
 Here is an example for a 11 vs 11 match (the --no-render argument is here to disable environment rendering. Remove it to watch training.):
 ```bash
-python working_multiagent_google.py --scenario-name "11_vs_11_stochastic" --num-agents 11 --num-policies 11 --num-iters 1000 --no-render
+python train.py --scenario-name "11_vs_11_stochastic" --num-agents 11 --num-policies 11 --num-iters 1000 --no-render
 ```
 
 Another example for the shapley_adversary.py scenario (3 players + the goal = 4 agents vs one adversaries player and a goal):
 ```bash
-python working_multiagent_google.py --scenario-name "shapley_adversary" --num-agents 4 --num-policies 4 --num-iters 1000 --no-render
+python train.py --scenario-name "shapley_adversary" --num-agents 4 --num-policies 4 --num-iters 1000 --no-render
 ```
 
 This will create files called "checkpoints" that will be used to store model weights every fifty iterations.
