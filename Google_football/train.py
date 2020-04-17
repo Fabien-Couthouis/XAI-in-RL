@@ -18,9 +18,10 @@ parser.add_argument('--num-agents', type=int, default=11)
 parser.add_argument('--num-policies', type=int, default=11)
 parser.add_argument('--num-iters', type=int, default=10000)
 parser.add_argument('--simple', action='store_true')
-# parser.add_argument('--no-resume', action='store_true') #TODO: add this functionnality
+parser.add_argument('--resume', action='store_true')
 parser.add_argument(
     "--scenario-name", default="11_vs_11_easy_stochastic", help="Change scenario name.")
+parser.add_argument('--trainer_algo', type=str, default="PPO", help="PPO|SAC")
 
 CHECKPOINT_PATH = "./multiagent-checkpoint"
 
@@ -120,37 +121,103 @@ if __name__ == '__main__':
     }
     policy_ids = list(policies.keys())
 
-    tune.run(
-        'PPO',
-        stop={'training_iteration': args.num_iters},
-        checkpoint_freq=100,
-        restore='models/PPO/11_vs_11_easy_stochastic3/checkpoint_110500/checkpoint-110500',
-        config={
-            'env': 'g_football',
-            'lambda': 0.95,
-            'kl_coeff': 0.2,
-            'clip_rewards': False,
-            'vf_clip_param': 10.0,
-            'entropy_coeff': 0.01,
-            'train_batch_size': 32,
-            'sample_batch_size': 16,
-            'sgd_minibatch_size': 16,
-            'num_sgd_iter': 10,
-            'num_workers': 3,
-            'num_envs_per_worker': 1,
-            'num_cpus_per_worker': 1,
-            'batch_mode': 'truncate_episodes',
-            'observation_filter': 'NoFilter',
-            'vf_share_layers': 'true',
-            'num_gpus': 1,
-            'lr': 2.5e-4,
-            'use_pytorch': 'true',
-            'log_level': 'WARN',
-            'simple_optimizer': args.simple,
-            'multiagent': {
-                'policies': policies,
-                'policy_mapping_fn': tune.function(
-                    lambda agent_id: policy_ids[int(agent_id[6:])]),
+    if args.trainer_algo == 'PPO':
+
+        tune.run(
+            'PPO',
+            stop={'training_iteration': args.num_iters},
+            checkpoint_freq=100,
+            resume=args.resume,
+            config={
+                #=== COMMON CONFIG 
+                'env': 'g_football',
+                'lambda': 0.95,
+                'kl_coeff': 0.2,
+                'clip_rewards': False,
+                'vf_clip_param': 10.0,
+                'entropy_coeff': 0.01,
+                'train_batch_size': 2000,
+                'sample_batch_size': 16,
+                'sgd_minibatch_size': 16,
+                'num_sgd_iter': 10,
+                'num_workers': 3,
+                'num_envs_per_worker': 1,
+                'num_cpus_per_worker': 1,
+                'batch_mode': 'truncate_episodes',
+                'observation_filter': 'NoFilter',
+                'vf_share_layers': 'true',
+                'num_gpus': 1,
+                'lr': 2.5e-4,
+                'use_pytorch': 'true',
+                'log_level': 'WARN',
+                'simple_optimizer': args.simple,
+                'multiagent': {
+                    'policies': policies,
+                    'policy_mapping_fn': tune.function(
+                        lambda agent_id: policy_ids[int(agent_id[6:])]),
+                },
             },
-        },
-    )
+        )
+    
+    elif args.trainer_algo == 'SAC':
+
+        tune.run(
+            'SAC',
+            stop={'training_iteration': args.num_iters},
+            checkpoint_freq=100,
+            resume=args.resume,
+            config={
+                #=== SAC SPECIFIC CONFIG ===
+                # === Model ===
+                "twin_q": True,
+                "use_state_preprocessor": False,
+                # RLlib model options for the Q function
+                "Q_model": {
+                    "hidden_activation": "relu",
+                    "hidden_layer_sizes": (256, 256),
+                },
+                # RLlib model options for the policy function
+                "policy_model": {
+                    "hidden_activation": "relu",
+                    "hidden_layer_sizes": (256, 256),
+                },
+                # Unsquash actions to the upper and lower bounds of env's action space.
+                # Ignored for discrete action spaces.
+                "normalize_actions": True,
+                # Disable setting done=True at end of episode. This should be set to True
+                # for infinite-horizon MDPs (e.g., many continuous control problems).
+                "no_done_at_end": False,
+                # Update the target by \tau * policy + (1-\tau) * target_policy.
+                "tau": 5e-3,
+                # Initial value to use for the entropy weight alpha.
+                "initial_alpha": 1.0,
+                # Target entropy lower bound. If "auto", will be set to -|A| (e.g. -2.0 for
+                # Discrete(2), -3.0 for Box(shape=(3,))).
+                # This is the inverse of reward scale, and will be optimized automatically.
+                "target_entropy": "auto",
+                # N-step target updates.
+                "n_step": 1,
+                # === Optimization ===
+                "optimization": {
+                    "actor_learning_rate": 3e-4,
+                    "critic_learning_rate": 3e-4,
+                    "entropy_learning_rate": 3e-4,
+                },
+                #=== COMMON CONFIG ===
+                'env': 'g_football',
+                'num_workers': 3,
+                'num_envs_per_worker': 1,
+                'num_cpus_per_worker': 1,
+                'num_gpus': 1,
+                'sample_batch_size': 200,
+                "train_batch_size": 256,
+                'lr': 2.5e-4,
+                'log_level': 'WARN',
+                'simple_optimizer': args.simple,
+                'multiagent': {
+                    'policies': policies,
+                    'policy_mapping_fn': tune.function(
+                        lambda agent_id: policy_ids[int(agent_id[6:])]),
+                },
+            }
+        )
