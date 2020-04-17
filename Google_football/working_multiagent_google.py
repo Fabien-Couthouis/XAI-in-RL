@@ -92,8 +92,6 @@ class RllibGFootball(MultiAgentEnv):
             agents_actions[key] = action_idle
         return agents_actions
 
-    def test(self):
-        print(self.env.observation())
 
 
 def gen_policy(_):
