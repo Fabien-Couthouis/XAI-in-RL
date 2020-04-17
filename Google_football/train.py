@@ -185,7 +185,7 @@ if __name__ == '__main__':
                 },
                 # Unsquash actions to the upper and lower bounds of env's action space.
                 # Ignored for discrete action spaces.
-                "normalize_actions": True,
+                "normalize_actions": False,
                 # Disable setting done=True at end of episode. This should be set to True
                 # for infinite-horizon MDPs (e.g., many continuous control problems).
                 "no_done_at_end": False,
