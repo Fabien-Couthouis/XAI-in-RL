@@ -106,8 +106,7 @@ def gib_to_octets(gib):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    ray.init(num_gpus=1, object_store_memory=gib_to_octets(
-        15), redis_max_memory=gib_to_octets(3), lru_evict=True)
+    ray.init()
 
     register_env('g_football', lambda _: RllibGFootball(
         args.num_agents, args.scenario_name, render=False))
@@ -136,16 +135,16 @@ if __name__ == '__main__':
                 'clip_rewards': False,
                 'vf_clip_param': 10.0,
                 'entropy_coeff': 0.01,
-                'sgd_minibatch_size': 16,
+                'sgd_minibatch_size': 500,
                 'num_sgd_iter': 10,
-                'use_pytorch': 'true',
+                'use_pytorch': 'false',
                 'observation_filter': 'NoFilter',
                 'vf_share_layers': 'true',
                 'simple_optimizer': args.simple,
                 #=== COMMON CONFIG ===
                 'env': 'g_football',
                 'train_batch_size': 2000,
-                'sample_batch_size': 16,
+                'sample_batch_size': 100,
                 'num_workers': 3,
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
@@ -211,8 +210,8 @@ if __name__ == '__main__':
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
                 'num_gpus': 1,
-                'sample_batch_size': 200,
-                "train_batch_size": 256,
+                'sample_batch_size': 100,
+                "train_batch_size": 2000,
                 'batch_mode': 'truncate_episodes',
                 'lr': 2.5e-4,
                 'log_level': 'WARN',
