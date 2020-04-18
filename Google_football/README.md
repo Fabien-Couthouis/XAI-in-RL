@@ -38,18 +38,17 @@ They will be located on `~/ray_results/default/...`.
 <!-- **By default, this script will resume training from the last checkpoint located in the `models` subdirectory.**
 If you don't want this behaviour, just pass the `--no-resume` argument. -->
 
-## Usefull arguments:
+### Usefull arguments:
 
 * **--no-render** - Disable environment rendering.
 * **--compute-shapley** - Compute Shapley values for each controlled agent.
 * **--save-replays** - Save video replays of the rollouts. 
-<!-- * **--resume** - Resume training from the last checkpoint located in the `models` subdirectory. #TODO: add this behaviour-->
 
 
 ## Evaluating an agent
 
-You can evaluate a trained agent by running the `rollout.py` script and passing the path to your model checkpoint file as an argument. Here is an example for a 11 vs 11 match:
+You can evaluate a trained agent by running the `test.py` script and passing the path to your model checkpoint file as an argument. Here is an example for a 11 vs 11 match:
 ```bash
-python rollout.py path_to_your_checkpoint --env gfootball --run PPO --scenario-name "11_vs_11_stochastic" --num-agents 11 --episodes 20 --steps 10000
+python test.py path_to_your_checkpoint --env gfootball --run PPO --scenario-name "11_vs_11_stochastic" --num-agents 11 --episodes 20 --steps 10000
 ```
-If you want to compute the agents' contributions using Shapley values, just pass the argument `--compute-shapley` to `rollout.py`.
+If you want to compute the agents' contributions using Shapley values, just pass the argument `--compute-shapley` to `rollout.py`. To plot Shapley value associated to each agent, pass the `--plot-shapley` argument.

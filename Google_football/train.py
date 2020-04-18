@@ -11,118 +11,94 @@ import numpy as np
 from ray import tune
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.tune.registry import register_env
+from ray.rllib.utils.framework import try_import_tf, try_import_torch
+from ray.tune.config_parser import make_parser
+from experiments.RllibGFootball import RllibGFootball, policy_agent_mapping
+from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
+from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy
 
-parser = argparse.ArgumentParser()
+from ray.rllib.agents.sac.sac_policy import SACTFPolicy
 
-parser.add_argument('--num-agents', type=int, default=11)
-parser.add_argument('--num-policies', type=int, default=11)
-parser.add_argument('--num-iters', type=int, default=10000)
-parser.add_argument('--checkpoint-freq', type=int, default=100)
-parser.add_argument('--simple', action='store_true')
-parser.add_argument('--resume', action='store_true')
-parser.add_argument(
-    "--scenario-name", default="11_vs_11_easy_stochastic", help="Change scenario name.")
-parser.add_argument('--trainer-algo', type=str, default="PPO", help="PPO|SAC")
 
+# Try to import both backends for flag checking/warnings.
+tf = try_import_tf()
+torch, _ = try_import_torch()
 CHECKPOINT_PATH = "./multiagent-checkpoint"
+EXAMPLE_USAGE = """
+Training example via RLlib CLI:
+    rllib train --run DQN --env CartPole-v0
+Grid search example via RLlib CLI:
+    rllib train -f tuned_examples/cartpole-grid-search-example.yaml
+Grid search example via executable:
+    ./train.py -f tuned_examples/cartpole-grid-search-example.yaml
+Note that -f overrides all other trial-specific command-line options.
+"""
 
 
-class RllibGFootball(MultiAgentEnv):
-    """An example of a wrapper for GFootball to make it compatible with rllib."""
+def create_parser(parser_creator=None):
+    parser = make_parser(
+        parser_creator=parser_creator,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Train a reinforcement learning agent.",
+        epilog=EXAMPLE_USAGE)
+    parser.add_argument(
+        "--scenario-name", default=None, help="Change scenario name.")
+    parser.add_argument('--num-agents', type=int, default=None)
 
-    def __init__(self, num_agents, env_name, render=True, save_replays=False):
-        self.env = football_env.create_environment(
-            env_name=env_name, stacked=False,
-            logdir='./replays', write_video=save_replays,
-            write_goal_dumps=save_replays, write_full_episode_dumps=save_replays, render=render,
-            dump_frequency=1,
-            number_of_left_players_agent_controls=num_agents,
-            channel_dimensions=(42, 42))
-        self.action_space = gym.spaces.Discrete(self.env.action_space.nvec[1])
-        self.observation_space = gym.spaces.Box(
-            low=self.env.observation_space.low[0],
-            high=self.env.observation_space.high[0],
-            dtype=self.env.observation_space.dtype)
-        self.num_agents = num_agents
+    parser.add_argument('--num-iters', type=int, default=10000)
+    parser.add_argument('--simple', action='store_true')
+    parser.add_argument(
+        "--ray-num-gpus",
+        default=1,
+        type=int,
+        help="--num-gpus to use if starting a new cluster.")
 
-    def reset(self):
-        original_obs = self.env.reset()
-        obs = {}
-        for x in range(self.num_agents):
-            if self.num_agents > 1:
-                obs['agent_%d' % x] = original_obs[x]
-            else:
-                obs['agent_%d' % x] = original_obs
-        return obs
+    parser.add_argument("--resume", action="store_true",
+                        help="Whether to attempt to resume previous Tune experiments.")
 
-    def step(self, action_dict):
-        actions = []
-        for key, value in sorted(action_dict.items()):
-            actions.append(value)
-        o, r, d, i = self.env.step(actions)
-        rewards = {}
-        obs = {}
-        infos = {}
-        for pos, key in enumerate(sorted(action_dict.keys())):
-            infos[key] = i
-            if self.num_agents > 1:
-                rewards[key] = r[pos]
-                obs[key] = o[pos]
-            else:
-                rewards[key] = r
-                obs[key] = o
-        dones = {'__all__': d}
-        return obs, rewards, dones, infos
-
-    def render(self):
-        self.env.render()
-
-    def get_random_actions(self):
-        'Return: list of random actions for each agent '
-        agents_actions = {}
-        for agent_id in range(self.num_agents):
-            key = "agent_"+str(agent_id)
-            agents_actions[key] = self.action_space.sample()
-        return agents_actions
-
-    def get_idle_actions(self):
-        'Return: list of idle (no move) actions for each agent '
-        agents_actions = {}
-        for agent_id in range(self.num_agents):
-            key = "agent_"+str(agent_id)
-            action_idle = 0
-            agents_actions[key] = action_idle
-        return agents_actions
+    parser.add_argument("--experiment-name", default="default", type=str,
+                        help="Name of the subdirectory under `local_dir` to put results in.")
+    parser.add_argument('--policy-type', default="PPOTF",
+                        type=str, help="PPOTF|PPOTORCH|SACTF: agent policy type to use to train the model with.")
+    return parser
 
 
-def gen_policy(_):
-    return (None, obs_space, act_space, {})
 
-
-def gib_to_octets(gib):
-    'Convert Gib value to octets'
-    return gib*100*1024 * 1024
+def gen_policies(args):
+    'Generate policies dict {policy_name: (policy_type,obs_space, act_space, {})}'
+    if args.policy_type.upper() == "SACTF":
+        policy_type = SACTFPolicy
+    elif args.policy_type.upper() == "PPOTF":
+        policy_type = PPOTFPolicy
+    elif args.policy_type.upper() == "PPOTORCH":
+        policy_type = PPOTorchPolicy
+    else:
+        raise ValueError(
+            "Policy is not valid. Valid policies are either: \"PPO\" or \"SAC\"")
+    policy = (policy_type, obs_space, act_space, {})
+    agent_names = [f"agent_{agent_id}" for agent_id in range(args.num_agents)]
+    policies = {policy_agent_mapping(agent_name): policy
+                for agent_name in agent_names}
+    return policies
 
 
 if __name__ == '__main__':
+    parser = create_parser()
     args = parser.parse_args()
-    ray.init(num_gpus=1, object_store_memory=gib_to_octets(
-        15), redis_max_memory=gib_to_octets(3), lru_evict=True)
+    ray.init(num_gpus=args.ray_num_gpus)
 
     register_env('g_football', lambda _: RllibGFootball(
         args.num_agents, args.scenario_name, render=False))
+
+    # Get obs/act spaces to feed the policy with
     single_env = RllibGFootball(
         args.num_agents, args.scenario_name, render=False)
     obs_space = single_env.observation_space
     act_space = single_env.action_space
 
-    # Setup PPO with an ensemble of `num_policies` different policies
-    policies = {
-        'policy_{}'.format(i): gen_policy(i) for i in range(args.num_policies)
-    }
-    policy_ids = list(policies.keys())
+    policies = gen_policies(args)
 
-    if args.trainer_algo == 'PPO':
+    if args.policy_type.upper().startswith("PPO"):
 
         tune.run(
             'PPO',
@@ -130,38 +106,37 @@ if __name__ == '__main__':
             checkpoint_freq=args.checkpoint_freq,
             resume=args.resume,
             config={
-                #=== PPO SPECIFIC CONFIG ===
+                # === PPO SPECIFIC CONFIG ===
                 'lambda': 0.95,
                 'kl_coeff': 0.2,
                 'clip_rewards': False,
                 'vf_clip_param': 10.0,
                 'entropy_coeff': 0.01,
-                'sgd_minibatch_size': 16,
+                'sgd_minibatch_size': 500,
                 'num_sgd_iter': 10,
-                'use_pytorch': 'true',
+                'use_pytorch': args.policy_type.upper().endswith("TORCH"),
                 'observation_filter': 'NoFilter',
-                'vf_share_layers': 'true',
+                'vf_share_layers': True,
                 'simple_optimizer': args.simple,
-                #=== COMMON CONFIG ===
+                # === COMMON CONFIG ===
                 'env': 'g_football',
                 'train_batch_size': 2000,
-                'sample_batch_size': 16,
+                'rollout_fragment_length': 100,  # NOTE: same as sample_batch_size in older versions
                 'num_workers': 3,
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
                 'batch_mode': 'truncate_episodes',
-                'num_gpus': 1,
+                'num_gpus': args.ray_num_gpus,
                 'lr': 2.5e-4,
                 'log_level': 'WARN',
                 'multiagent': {
                     'policies': policies,
-                    'policy_mapping_fn': tune.function(
-                        lambda agent_id: policy_ids[int(agent_id[6:])]),
+                    'policy_mapping_fn': policy_agent_mapping,
                 },
             },
         )
-    
-    elif args.trainer_algo == 'SAC':
+
+    elif args.policy_type.upper().startswith("SAC"):
 
         tune.run(
             'SAC',
@@ -169,7 +144,7 @@ if __name__ == '__main__':
             checkpoint_freq=args.checkpoint_freq,
             resume=args.resume,
             config={
-                #=== SAC SPECIFIC CONFIG ===
+                # === SAC SPECIFIC CONFIG ===
                 # === Model ===
                 "twin_q": True,
                 "use_state_preprocessor": False,
@@ -205,21 +180,20 @@ if __name__ == '__main__':
                     "critic_learning_rate": 3e-4,
                     "entropy_learning_rate": 3e-4,
                 },
-                #=== COMMON CONFIG ===
+                # === COMMON CONFIG ===
                 'env': 'g_football',
                 'num_workers': 3,
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
-                'num_gpus': 1,
-                'sample_batch_size': 200,
-                "train_batch_size": 256,
+                'num_gpus': args.ray_num_gpus,
+                'rollout_fragment_length': 100,  # NOTE: same as sample_batch_size in older versions
+                "train_batch_size": 2000,
                 'batch_mode': 'truncate_episodes',
                 'lr': 2.5e-4,
                 'log_level': 'WARN',
                 'multiagent': {
                     'policies': policies,
-                    'policy_mapping_fn': tune.function(
-                        lambda agent_id: policy_ids[int(agent_id[6:])]),
+                    'policy_mapping_fn': policy_agent_mapping,
                 },
             }
         )
