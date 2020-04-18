@@ -15,6 +15,8 @@ from ray.rllib.utils.framework import try_import_tf, try_import_torch
 from ray.tune.config_parser import make_parser
 from experiments.RllibGFootball import RllibGFootball, policy_agent_mapping
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
+from ray.rllib.agents.impala.vtrace_policy import VTraceTFPolicy
+
 from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy
 
 from ray.rllib.agents.sac.sac_policy import SACTFPolicy
@@ -59,7 +61,7 @@ def create_parser(parser_creator=None):
     parser.add_argument("--experiment-name", default="default", type=str,
                         help="Name of the subdirectory under `local_dir` to put results in.")
     parser.add_argument('--policy-type', default="PPOTF",
-                        type=str, help="PPOTF|PPOTORCH|SACTF: agent policy type to use to train the model with.")
+                        type=str, help="PPOTF|PPOTORCH|SACTF|IMPALATF: agent policy type to use to train the model with.")
     return parser
 
 
@@ -71,9 +73,11 @@ def gen_policies(args):
         policy_type = PPOTFPolicy
     elif args.policy_type.upper() == "PPOTORCH":
         policy_type = PPOTorchPolicy
+    elif args.policy_type.upper() == "IMPALATF":
+        policy_type = VTraceTFPolicy
     else:
         raise ValueError(
-            "Policy is not valid. Valid policies are either: \"PPO\" or \"SAC\"")
+            "Policy is not valid. Valid policies are either: \"PPOTF\" \"PPOTORCH\", \"IMPALATF\" or \"SACTF\"")
     policy = (policy_type, obs_space, act_space, {})
     agent_names = [f"agent_{agent_id}" for agent_id in range(args.num_agents)]
     policies = {policy_agent_mapping(agent_name): policy
@@ -286,4 +290,4 @@ if __name__ == '__main__':
         )
 
     else:
-        raise ValueError(f"Unsupported algorithm: \"{args.policy_type}\""")
+        raise ValueError(f"Unsupported algorithm: \"{args.policy_type}\"")
