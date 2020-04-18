@@ -137,9 +137,9 @@ if __name__ == '__main__':
                 'entropy_coeff': 0.01,
                 'sgd_minibatch_size': 500,
                 'num_sgd_iter': 10,
-                'use_pytorch': 'false',
+                'use_pytorch': False,
                 'observation_filter': 'NoFilter',
-                'vf_share_layers': 'true',
+                'vf_share_layers': True,
                 'simple_optimizer': args.simple,
                 #=== COMMON CONFIG ===
                 'env': 'g_football',
