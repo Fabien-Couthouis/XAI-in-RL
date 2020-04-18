@@ -32,18 +32,16 @@ Another example for the shapley_adversary.py scenario (3 players + the goal = 4 
 python train.py --scenario-name "shapley_adversary" --num-agents 4 --num-policies 4 --num-iters 1000 --no-render
 ```
 
-This will create files called "checkpoints" that will be used to store model weights every fifty iterations.
+This will create files called "checkpoints" that will be used to store model weights every **--checkpoint-freq** iterations.
 They will be located on `~/ray_results/default/...`.
-
-<!-- **By default, this script will resume training from the last checkpoint located in the `models` subdirectory.**
-If you don't want this behaviour, just pass the `--no-resume` argument. -->
 
 ### Usefull arguments:
 
 * **--no-render** - Disable environment rendering.
+* **--resume** - Resume training from last checkpoint available.
 * **--compute-shapley** - Compute Shapley values for each controlled agent.
-* **--save-replays** - Save video replays of the rollouts. 
-
+* **--save-replays** - Save video replays of the rollouts.
+* **--policy-type** - Choose which policy type to use between: "PPOTF"(default), "PPOTORCH", "SACTF" and "IMPALATF". 
 
 ## Evaluating an agent
 
