@@ -63,7 +63,6 @@ def create_parser(parser_creator=None):
     return parser
 
 
-
 def gen_policies(args):
     'Generate policies dict {policy_name: (policy_type,obs_space, act_space, {})}'
     if args.policy_type.upper() == "SACTF":
@@ -197,8 +196,8 @@ if __name__ == '__main__':
                 },
             }
         )
-    
-    elif args.trainer_algo == "IMPALA":
+
+    elif args.policy_type.upper().startswith("IMPALA"):
 
         tune.run(
             'IMPALA',
@@ -206,8 +205,8 @@ if __name__ == '__main__':
             checkpoint_freq=args.checkpoint_freq,
             resume=args.resume,
             config={
-                #=== IMPALA SPECIFIC CONFIG ===
-                 # V-trace params (see vtrace.py).
+                # === IMPALA SPECIFIC CONFIG ===
+                # V-trace params (see vtrace.py).
                 "vtrace": True,
                 "vtrace_clip_rho_threshold": 1.0,
                 "vtrace_clip_pg_rho_threshold": 1.0,
@@ -269,23 +268,22 @@ if __name__ == '__main__':
 
                 # use fake (infinite speed) sampler for testing
                 "_fake_sampler": False,
-                #=== COMMON CONFIG ===
+                # === COMMON CONFIG ===
                 'env': 'g_football',
                 'num_workers': 3,
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
-                'num_gpus': 1,
+                'num_gpus': args.ray_num_gpus,
                 'rollout_fragment_length': 100,
                 "train_batch_size": 2000,
                 'batch_mode': 'truncate_episodes',
                 'log_level': 'WARN',
                 'multiagent': {
                     'policies': policies,
-                    'policy_mapping_fn': tune.function(
-                        lambda agent_id: policy_ids[int(agent_id[6:])]),
+                    'policy_mapping_fn': policy_agent_mapping,
                 },
             }
         )
-    
+
     else:
-        print(f"ERROR: Unsupported algorithm '{args.trainer_algo}'")
+        raise ValueError(f"Unsupported algorithm: \"{args.policy_type}\""")
