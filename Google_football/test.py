@@ -21,7 +21,7 @@ from ray.tune.registry import register_env
 
 from experiments.RllibGFootball import RllibGFootball
 from experiments.rollout import *
-from experiments.shapley_values import shapley_values
+from experiments.shapley_values import monte_carlo_shapley_values, exact_shapley_values
 from experiments.plot import plot_shap_barchart, plot_shap_piechart
 
 
@@ -121,10 +121,10 @@ def create_parser(parser_creator=None):
         type=int,
         help="Number of random coalitions used to estimate shapley value for each player.")
     parser.add_argument(
-        "--missing-agents-behaviour",
+        "--missing-players-behaviour",
         default="random",
         type=str,
-        help="random|idle: Behaviour for missing (from the coalition) agents in Shapley value computation. Random for random actions, idle for no action.")
+        help="random|idle: Behaviour for missing (from the coalition) players in Shapley value computation. Random for random actions, idle for no action.")
     parser.add_argument(
         "--scenario-name",
         default="shapley_no_adversary",
@@ -190,12 +190,14 @@ def run(args, parser):
             target_episodes=num_episodes,
             save_info=args.save_info) as saver:
         if args.compute_shapley:
-            s_values = shapley_values(args.env, env.num_agents,
-                                      agent, num_steps, num_episodes, n_random_coalitions=args.n_random_coalitions, replace_missing_agents=args.missing_agents_behaviour)
-            ax = plot_shap_barchart(s_values, AGENTS_NAMES[:env.num_agents])
+            shapley_values = monte_carlo_shapley_values(args.env, env.num_agents,
+                                                        agent, n_random_coalitions=args.n_random_coalitions, replace_missing_players=args.missing_players_behaviour)
+            # shapley_values = exact_shapley_values(args.env, env.num_agents, agent, num_steps,
+            #                                       num_episodes, replace_missing_players=args.missing_players_behaviour)
+            ax = plot_shap_barchart(
+                shapley_values, AGENTS_NAMES[:len(shapley_values)])
             if args.plot_shapley:
                 plt.show()
-                print("PLOT")
 
         else:
             return rollout(agent, args.env, num_steps, num_episodes, saver,

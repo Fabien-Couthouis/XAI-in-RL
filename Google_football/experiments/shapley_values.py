@@ -9,119 +9,126 @@ from experiments.rollout import rollout
 DEBUG = False
 
 
-def get_combinations(features):
-    'Get all possible coalitions between features'
-    combinations_list = []
-    for i in range(1, len(features)+1):
+def compute_coalitions(features):
+    'Get all possible coalitions (combinations) between features (including empty list)'
+    coalitions = []
+    for i in range(0, len(features)+1):
         oc = combinations(features, i)
         for c in oc:
-            combinations_list.append(list(c))
-    return combinations_list
+            coalitions.append(list(c))
+    return coalitions
 
 
-def get_combinations_for_feature(features, feature_id):
-    combinations = get_combinations(features)
-    with_player, without_player = [], []
-    for feature in combinations:
-        if feature_id in feature:
-            with_player.append(feature)
-        else:
-            without_player.append(feature)
-
-    return with_player, without_player
+def compute_coalitions_with_player(player_id, players_ids):
+    'Compute all coalitions of players including current player'
+    coalitions = compute_coalitions(players_ids)
+    coalitions_with_player = [
+        coalition for coalition in coalitions if player_id in coalition]
+    return coalitions_with_player
 
 
-def shapley_values(env_name, n_agents, agent, num_steps=0, num_episodes=1, n_random_coalitions=100, replace_missing_agents="random"):
+def monte_carlo_shapley_values(env_name, n_players, agent, n_random_coalitions=100, replace_missing_players="random"):
     """
-    Monte Carlo estimation of shapley values (o(M*n_agents) complexity).
+    Monte Carlo estimation of shapley values (if k = num_episodes*n_random_coalitions, o(k*n_agents) complexity).
     Parameters:
         n_random_coalitions (optional, default=100): Number of random coalitions used to estimate shapley value for each player. 
-        replace_missing_agents (optional, default="random"): "random" to replace an agent absent from the coalition by random actions
+        replace_missing_players (optional, default="random"): "random" to replace a player absent from the coalition by random actions
             or "idle" to let it doing nothing
         See rollout function for other parameters.
     """
 
-    print("Starting Shapley value estimation on:", n_agents,
-          "agents,", num_episodes, "episodes, n_random_coalitions=", n_random_coalitions)
+    print("Starting Shapley value estimation on:", n_players,
+          "players,", num_episodes, "episodes, n_random_coalitions=", n_random_coalitions)
 
-    estimated_values = []
-    features = range(n_agents)
-    for feature in features:
-        print(f"Starting computation for agent {feature}")
-        with_player, without_player = get_combinations_for_feature(
-            features, feature)
+    shapley_values = []
+    players_ids = list(range(n_players))
+    for player_id in players_ids:
+        print(f"Starting computation for player {player_id}...")
+        # Get all possible combinations with and without the current player
+        coalitions_with_player = compute_coalitions_with_player(
+            player_id, players_ids)
         marginal_contributions = []
         for c in range(1, 1+n_random_coalitions):
-            print(f"Coalition {c}/{n_random_coalitions} for Agent {feature}:")
-            coalition_with_player = random.choice(with_player)
-            coalition_without_player = random.choice(without_player)
 
-            value_with_player = rollout(
-                agent, env_name, num_steps, num_episodes, coalition=coalition_with_player, verbose=False)
-            value_without_player = rollout(
-                agent, env_name, num_steps, num_episodes, coalition=coalition_without_player, replace_missing_agents=replace_missing_agents, verbose=False)
+            # Select random coalitions
+            coalition_with_player = random.choice(coalitions_with_player)
+            coalition_without_player = [
+                n for n in coalition_with_player if n != player_id]
+            print(
+                f"Coalition {c}/{n_random_coalitions}: {coalition_with_player}")
 
-            marginal_contribution = (
-                sum(value_with_player)-sum(value_without_player))/num_episodes
+            # Simulate num_episodes episodes on selected coalitions with and without current player
+            reward_with_player = rollout(
+                agent, env_name, num_steps, num_episodes=1, coalition=coalition_with_player,
+                verbose=False)[0]
+            reward_without_player = rollout(
+                agent, env_name, num_steps, num_episodes=1,
+                coalition=coalition_without_player, replace_missing_players=replace_missing_players,
+                verbose=False)[0]
+
+            # Compute estimated marginal contribution
+            marginal_contribution = reward_with_player - reward_without_player
             marginal_contributions.append(marginal_contribution)
 
-        estimated_values.append(mean(marginal_contributions))
+        # Compute shapley value as the mean of marginal contributions
+        shapley_value = mean(marginal_contributions)
+        shapley_values.append(shapley_value)
+        print(f"Shapley value for player {player_id}: {shapley_value}")
 
-    print("Shapley values:", estimated_values)
+    print("Shapley values:", shapley_values)
 
-    return estimated_values
+    return shapley_values
 
 
 # Old version
 
-# def compute_marginal_contributions(env_name, features, num_steps, num_episodes, agent, replace_missing_agents):
-#     'Get mean reward for each agent for each coalitions '
-#     marginal_contributions = dict()
-#     for coalition in get_combinations(features):
-#         total_rewards = rollout(
-#             agent, env_name, num_steps, num_episodes, coalition=coalition, replace_missing_agents=replace_missing_agents)
+def compute_marginal_contributions(env_name, features, num_steps, num_episodes, agent, replace_missing_players):
+    'Get mean reward for each agent for each coalitions '
+    marginal_contributions = dict()
+    for coalition in compute_coalitions(features):
+        total_rewards = rollout(
+            agent, env_name, num_steps, num_episodes, coalition=coalition, replace_missing_players=replace_missing_players, verbose=False)
 
-#         marginal_contributions[str(coalition)] = round(mean(total_rewards), 2)
-#     if DEBUG:
-#         print("Coalition values: ", marginal_contributions)
-#     return marginal_contributions
+        marginal_contributions[str(coalition)] = round(mean(total_rewards), 2)
+    if DEBUG:
+        print("Coalition values: ", marginal_contributions)
+    return marginal_contributions
 
-# def exact_shapley_values(env_name, n_agents, agent, num_steps=10, num_episodes=1, replace_missing_agents="random"):
-#     'Naive implementation (not optimized at all)'
-#     agents_ids = range(n_agents)
-#     coalition_values = compute_marginal_contributions(
-#         env_name, agents_ids, num_steps, num_episodes, agent, replace_missing_agents)
-#     shapley_values = []
 
-#     for agent_id in agents_ids:
-#         if DEBUG:
-#             print("Computing shap value for agent: ", agent_id)
-#         shapley_value = 0
+def exact_shapley_values(env_name, n_agents, agent, num_steps=10, num_episodes=1, replace_missing_players="random"):
+    'Naive implementation (not optimized at all)'
+    agents_ids = range(n_agents)
+    coalition_values = compute_marginal_contributions(
+        env_name, agents_ids, num_steps, num_episodes, agent, replace_missing_players)
+    shapley_values = []
 
-#         for permutation in permutations(agents_ids):
-#             to_remove = []
-#             if DEBUG:
-#                 print("permutation ", permutation)
-#             for i, x in enumerate(permutation):
-#                 if x == agent_id:
-#                     coalition = sorted(permutation[:i+1])
-#                     if DEBUG:
-#                         print("coalition", coalition)
-#                     shapley_value += coalition_values[str(coalition)]
+    for agent_id in agents_ids:
+        if DEBUG:
+            print("Computing shap value for agent: ", agent_id)
+        shapley_value = 0
 
-#                     if len(to_remove) > 0:
-#                         to_remove = str(sorted(to_remove))
-#                         shapley_value -= coalition_values[to_remove]
-#                         if DEBUG:
-#                             print("to remove ", to_remove)
-#                     break
-#                 else:
-#                     to_remove.append(x)
-#         shapley_values.append(shapley_value)
+        for permutation in permutations(agents_ids):
+            to_remove = []
+            if DEBUG:
+                print("permutation ", permutation)
+            for i, x in enumerate(permutation):
+                if x == agent_id:
+                    coalition = sorted(permutation[:i+1])
+                    if DEBUG:
+                        print("coalition", coalition)
+                    shapley_value += coalition_values[str(coalition)]
 
-#     result = np.divide(shapley_values, np.math.factorial(n_agents))
-#     norm_result = np.divide(result, sum(result))
-#     print("Normalized Shapley values:", norm_result)
-#     print("Shapley values:", result)
+                    if len(to_remove) > 0:
+                        to_remove = str(sorted(to_remove))
+                        shapley_value -= coalition_values[to_remove]
+                        if DEBUG:
+                            print("to remove ", to_remove)
+                    break
+                else:
+                    to_remove.append(x)
+        shapley_values.append(shapley_value)
 
-#     return result
+    result = np.divide(shapley_values, np.math.factorial(n_agents))
+    print("Shapley values:", result)
+
+    return result

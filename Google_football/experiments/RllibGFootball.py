@@ -13,7 +13,7 @@ class RllibGFootball(MultiAgentEnv):
 
     def __init__(self, num_agents, env_name, render=True, save_replays=False):
         self.env = football_env.create_environment(
-            env_name=env_name, stacked=False,
+            env_name=env_name, stacked=False, 
             logdir='./replays', write_video=save_replays,
             write_goal_dumps=save_replays, write_full_episode_dumps=save_replays, render=render,
             dump_frequency=1,

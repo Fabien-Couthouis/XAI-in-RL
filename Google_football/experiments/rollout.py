@@ -176,7 +176,7 @@ def rollout(agent,
             no_render=True,
             monitor=False,
             coalition=None,
-            replace_missing_agents="random",
+            replace_missing_players="random",
             verbose=True):
     'Play game'
 
@@ -229,7 +229,7 @@ def rollout(agent,
 
             if coalition is not None:
                 action = take_actions_for_coalition(env, agent, multi_obs, mapping_cache, use_lstm,
-                                                    agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition, replace_missing_agents)
+                                                    agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition, replace_missing_players)
             else:
                 action = take_action(agent, multi_obs, mapping_cache, use_lstm,
                                      agent_states, prev_actions, prev_rewards, policy_agent_mapping)
@@ -264,7 +264,6 @@ def rollout(agent,
         if done:
             episodes += 1
             reward_table.append(reward_total)
-
     return reward_table
 
 
@@ -298,7 +297,7 @@ def take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_ac
 
 def take_actions_for_coalition(env, agent, multi_obs, mapping_cache, use_lstm,
                                agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition, missing_agents_bahaviour):
-    'Return actions where each agent in coalition follow the policy, others play at random if replace_missing_agents=="random" or do not move if replace_missing_agents=="idle'
+    'Return actions where each agent in coalition follow the policy, others play at random if replace_missing_players=="random" or do not move if replace_missing_players=="idle'
     actions = take_action(agent, multi_obs, mapping_cache, use_lstm,
                           agent_states, prev_actions, prev_rewards, policy_agent_mapping)
 
