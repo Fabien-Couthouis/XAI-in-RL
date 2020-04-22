@@ -89,7 +89,7 @@ def gen_policies(args):
 if __name__ == '__main__':
     parser = create_parser()
     args = parser.parse_args()
-    ray.init(num_gpus=args.ray_num_gpus)
+    ray.init(num_gpus=args.ray_num_gpus, lru_evict=True)
 
     register_env('g_football', lambda _: RllibGFootball(
         args.num_agents, args.scenario_name, render=False))
@@ -290,7 +290,7 @@ if __name__ == '__main__':
             }
         )
     
-    elif args.policy_type.upper().startswith("MPADDPG"):
+    elif args.policy_type.upper().startswith("MADDPG"):
 
         tune.run(
             'contrib/MADDPG',
