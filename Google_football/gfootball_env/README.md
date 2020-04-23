@@ -4,8 +4,9 @@ This repository contains an RL environment based on open-source game Gameplay
 Football. <br> It was created by the Google Brain team for research purposes.
 
 Useful links:
-* __(NEW!)__ [GRF Game Server](https://research-football.dev/) - challenge other researchers!
-* __(NEW!)__ [Run in Colab](https://colab.research.google.com/github/google-research/football/blob/master/colabs/gfootball_example_from_prebuild.ipynb) - start training in less that 2 minutes.
+* __(NEW!)__ [GRF Tournament](https://research-football.dev/tournament) - take part in the Tournament and become the new GRF Champion! Starting April 2020.
+* [GRF Game Server](https://research-football.dev/) - challenge other researchers!
+* [Run in Colab](https://colab.research.google.com/github/google-research/football/blob/master/gfootball/colabs/gfootball_example_from_prebuild.ipynb) - start training in less that 2 minutes.
 * [Google Research Football Paper](https://arxiv.org/abs/1907.11180)
 * [GoogleAI blog post](https://ai.googleblog.com/2019/06/introducing-google-research-football.html)
 * [Google Research Football on Cloud](https://towardsdatascience.com/reproducing-google-research-football-rl-results-ac75cf17190e)
@@ -22,31 +23,52 @@ We'd like to thank Bastiaan Konings Schuiling, who authored and open-sourced the
 
 ### In colab
 
-Open our example [Colab](https://colab.research.google.com/github/google-research/football/blob/master/colabs/gfootball_example_from_prebuild.ipynb), that will allow you to start training your model in less than 2 minutes.
+Open our example [Colab](https://colab.research.google.com/github/google-research/football/blob/master/gfootball/colabs/gfootball_example_from_prebuild.ipynb), that will allow you to start training your model in less than 2 minutes.
 
 This method doesn't support game rendering on screen - if you want to see the game running, please use the method below.
 
 ### On your computer
 
-Install required apt packages with:
+#### 1. Install required packages
 
+#### Linux
 ```
 sudo apt-get install git cmake build-essential libgl1-mesa-dev libsdl2-dev \
 libsdl2-image-dev libsdl2-ttf-dev libsdl2-gfx-dev libboost-all-dev \
 libdirectfb-dev libst-dev mesa-utils xvfb x11vnc libsdl-sge-dev python3-pip
 ```
 
-Then install the game from GitHub master:
+#### Mac OS X
+First install [brew](https://brew.sh/). It should automatically install Command Line Tools. 
+Next install required packages: 
+```
+brew install git python3 cmake sdl2 sdl2_image sdl2_ttf sdl2_gfx boost boost-python3
+```
+
+#### 2. Clone the game from GitHub master
 ```
 git clone https://github.com/google-research/football.git
 cd football
+```
+
+#### Optional: Create and activate [virtual environment](https://docs.python.org/3/tutorial/venv.html)
+```
+python3 -m venv football-env
+source football-env/bin/activate
+```
+
+#### 3. Install the game
+```
 pip3 install .
 ```
-This command can run for a couple of minutes, as it compiles the C++ environment in the background. Now, it's time to play!
+This command can run for a couple of minutes, as it compiles the C++ environment in the background. 
 
+#### 4. Time to play!
 ```
 python3 -m gfootball.play_game --action_set=full
 ```
+Make sure to check out the [keyboard mappings](#keyboard-mappings).  
+To quit the game press Ctrl+C in the terminal.
 
 # Contents #
 
@@ -68,11 +90,11 @@ python3 -m gfootball.play_game --action_set=full
 ### Run training
 In order to run TF training, install additional dependencies:
 
-- Update PIP, so that tensorflow 1.15rc2 is available: `python3 -m pip install --upgrade pip`
-- TensorFlow: `pip3 install "tensorflow==1.15rc2"` or
-  `pip3 install "tensorflow-gpu==1.15rc2"`, depending on whether you want CPU or
+- Update PIP, so that tensorflow 1.15 is available: `python3 -m pip install --upgrade pip`
+- TensorFlow: `pip3 install "tensorflow==1.15"` or
+  `pip3 install "tensorflow-gpu==1.15"`, depending on whether you want CPU or
   GPU version;
-- Sonnet: `pip3 install dm-sonnet`;
+- Sonnet: `pip3 install "dm-sonnet<2.0.0"`;
 - OpenAI Baselines:
   `pip3 install git+https://github.com/openai/baselines.git@master`.
 

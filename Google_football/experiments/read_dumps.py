@@ -83,6 +83,7 @@ def get_dumps(file_path):
 
 def show_one(file_path, show_all=False):
     dumps = get_dumps(file_path)
+    print(dumps)
 
     if show_all:
         print(dumps)
@@ -104,6 +105,6 @@ def show_one(file_path, show_all=False):
                           "player", obs['ball_owned_player'], "\n")
 
 
-show_one("episode_done_20200218-194207134742.dump", False)
+show_one("episode_done_20200418-141133054416.dump", True)
 # scorers = get_scorers("score_20200206-174813545665.dump")
 # print(scorers)

@@ -29,6 +29,11 @@ class CMakeExtension(Extension):
 class CustomBuild(build_ext):
   """Custom installation script to build the C++ environment."""
   def run(self):
+    # https://stackoverflow.com/questions/32419594/how-to-create-a-dylib-c-extension-on-mac-os-x-with-distutils-and-or-setuptools
+    if sys.platform == 'darwin':
+        from distutils import sysconfig
+        vars = sysconfig.get_config_vars()
+        vars['LDSHARED'] = vars['LDSHARED'].replace('-bundle', '-dynamiclib -Wl,-F.')
     dest_dir = os.path.join(self.build_lib, 'gfootball_engine')
 
     if os.system('cp -r third_party/fonts ' + dest_dir):
@@ -54,7 +59,7 @@ packages = find_packages() + find_packages('third_party')
 
 setup(
     name='gfootball',
-    version='2.0.4',
+    version='2.0.6',
     description=('Google Research Football - RL environment based on '
                  'open-source game Gameplay Football'),
     author='Google LLC',
