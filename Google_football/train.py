@@ -43,7 +43,6 @@ def create_parser(parser_creator=None):
     parser.add_argument(
         "--scenario-name", default=None, help="Change scenario name.")
     parser.add_argument('--num-agents', type=int, default=None)
-    parser.add_argument('--checkpoint-freq', type=int, default=100)
     parser.add_argument('--num-iters', type=int, default=10000)
     parser.add_argument('--simple', action='store_true')
     parser.add_argument("--ray-num-gpus", default=1, type=int,
@@ -105,7 +104,7 @@ if __name__ == '__main__':
                 'clip_rewards': False,
                 'vf_clip_param': 10.0,
                 'entropy_coeff': 0.01,
-                'sgd_minibatch_size': 500,
+                'sgd_minibatch_size': 250,
                 'num_sgd_iter': 10,
                 'use_pytorch': False,
                 'observation_filter': 'NoFilter',
@@ -113,14 +112,14 @@ if __name__ == '__main__':
                 'simple_optimizer': args.simple,
                 # === COMMON CONFIG ===
                 'env': 'g_football',
-                'train_batch_size': 2000,
-                'rollout_fragment_length': 100,  # NOTE: same as sample_batch_size in older versions
+                'train_batch_size': 250,
+                'rollout_fragment_length': 50,  # NOTE: same as sample_batch_size in older versions
                 'num_workers': 3,
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
                 'batch_mode': 'truncate_episodes',
                 'num_gpus': args.ray_num_gpus,
-                'lr': 2.5e-4,
+                'lr': 5e-4,
                 'log_level': 'WARN',
                 'multiagent': {
                     'policies': policies,
