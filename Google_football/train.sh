@@ -1,1 +1,1 @@
-python train.py --scenario-name "shapley_adversary" --num-agents 4 --num-iters 100 --ray-num-gpus 0 --policy-type=PPOTF
+python train.py --scenario-name "shapley_5_vs_5" --num-agents 5 --num-iters 100 --ray-num-gpus 0 --policy-type=MADDPG
