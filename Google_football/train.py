@@ -43,18 +43,13 @@ def create_parser(parser_creator=None):
     parser.add_argument(
         "--scenario-name", default=None, help="Change scenario name.")
     parser.add_argument('--num-agents', type=int, default=None)
-
+    parser.add_argument('--checkpoint-freq', type=int, default=100)
     parser.add_argument('--num-iters', type=int, default=10000)
     parser.add_argument('--simple', action='store_true')
-    parser.add_argument(
-        "--ray-num-gpus",
-        default=1,
-        type=int,
-        help="--num-gpus to use if starting a new cluster.")
-
+    parser.add_argument("--ray-num-gpus", default=1, type=int,
+                        help="number of gpus to use if starting a new cluster.")
     parser.add_argument("--resume", action="store_true",
                         help="Whether to attempt to resume previous Tune experiments.")
-
     parser.add_argument("--experiment-name", default="default", type=str,
                         help="Name of the subdirectory under `local_dir` to put results in.")
     parser.add_argument('--policy-type', default="PPOTF",
