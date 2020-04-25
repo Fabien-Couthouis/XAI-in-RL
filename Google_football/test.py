@@ -191,7 +191,7 @@ def run(args, parser):
             save_info=args.save_info) as saver:
         if args.compute_shapley:
             shapley_values = monte_carlo_shapley_values(args.env, env.num_agents,
-                                                        agent, n_random_coalitions=args.n_random_coalitions, replace_missing_players=args.missing_players_behaviour)
+                                                        agent, num_steps, num_episodes=num_episodes, n_random_coalitions=args.n_random_coalitions, replace_missing_players=args.missing_players_behaviour)
             # shapley_values = exact_shapley_values(args.env, env.num_agents, agent, num_steps,
             #                                       num_episodes, replace_missing_players=args.missing_players_behaviour)
             ax = plot_shap_barchart(
