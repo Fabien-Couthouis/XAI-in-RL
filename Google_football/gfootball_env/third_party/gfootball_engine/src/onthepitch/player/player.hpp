@@ -86,6 +86,9 @@ class Player : public PlayerBase {
     int GetDesiredTimeToBall_ms() const { return clamp(desiredTimeToBall_ms, timeNeededToGetToBall_ms, 1000000.0f); }
     bool AllowLastDitch(bool includingPossessionAmount = true) const;
 
+    inline int GetNumberPasses() const { return numberPasses; }
+    void SetNumberPasses(int n) { numberPasses = n; }
+
     void TriggerControlledBallCollision() { DO_VALIDATION; triggerControlledBallCollision = true; }
     bool IsControlledBallCollisionTriggered() { DO_VALIDATION; return triggerControlledBallCollision; }
     void ResetControlledBallCollisionTrigger() { DO_VALIDATION; triggerControlledBallCollision = false; }
@@ -150,6 +153,7 @@ class Player : public PlayerBase {
 
     int desiredTimeToBall_ms = 0;
     int cards = 0; // 1 == 1 yellow; 2 == 2 yellow; 3 == 1 red; 4 == 1 yellow, 1 red
+    unsigned int numberPasses = 0; 
 
     unsigned long cardEffectiveTime_ms = 0;
 

@@ -244,6 +244,7 @@ struct PlayerInfo {
     player_direction = f.player_direction;
     has_card = f.has_card;
     is_active = f.is_active;
+    number_passes = f.number_passes;
     tired_factor = f.tired_factor;
     role = f.role;
   }
@@ -253,12 +254,14 @@ struct PlayerInfo {
         has_card == f.has_card &&
         is_active == f.is_active &&
         tired_factor == f.tired_factor &&
+        number_passes == f.number_passes &&
         role == f.role;
   }
   Position player_position;
   Position player_direction;
   bool has_card = false;
   bool is_active = true;
+  int number_passes = 0;
   float tired_factor = 0.0f; // In the [0..1] range.
   e_PlayerRole role = e_PlayerRole_GK;
 };
