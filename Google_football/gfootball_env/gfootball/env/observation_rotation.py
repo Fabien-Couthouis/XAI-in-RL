@@ -94,6 +94,8 @@ def flip_team_observation(observation, result, config, from_team, to_team):
       '{}_team_active'.format(from_team)]
   result['{}_team_yellow_card'.format(to_team)] = observation[
       '{}_team_yellow_card'.format(from_team)]
+  result['{}_team_number_passes'.format(to_team)] = observation[
+      '{}_team_number_passes'.format(from_team)]
   result['{}_team_roles'.format(to_team)] = observation['{}_team_roles'.format(
       from_team)]
   result['{}_team_active'.format(to_team)] = observation[

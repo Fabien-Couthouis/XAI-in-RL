@@ -27,7 +27,7 @@ def compute_coalitions_with_player(player_id, players_ids):
     return coalitions_with_player
 
 
-def monte_carlo_shapley_values(env_name, n_players, agent, n_random_coalitions=100, replace_missing_players="random"):
+def monte_carlo_shapley_values(env_name, n_players, agent, num_steps, n_random_coalitions=100, num_episodes=1, replace_missing_players="random"):
     """
     Monte Carlo estimation of shapley values (if k = num_episodes*n_random_coalitions, o(k*n_agents) complexity).
     Parameters:
@@ -58,6 +58,7 @@ def monte_carlo_shapley_values(env_name, n_players, agent, n_random_coalitions=1
                 f"Coalition {c}/{n_random_coalitions}: {coalition_with_player}")
 
             # Simulate num_episodes episodes on selected coalitions with and without current player
+            # num episode replaces num steps when used (num steps value is useless here)
             reward_with_player = rollout(
                 agent, env_name, num_steps=1, num_episodes=1, coalition=coalition_with_player,
                 verbose=False)[0]
