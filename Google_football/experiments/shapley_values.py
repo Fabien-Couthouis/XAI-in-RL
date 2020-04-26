@@ -33,12 +33,12 @@ def monte_carlo_shapley_values(env_name, n_players, agent, n_random_coalitions=1
     Parameters:
         n_random_coalitions (optional, default=100): Number of random coalitions used to estimate shapley value for each player. 
         replace_missing_players (optional, default="random"): "random" to replace a player absent from the coalition by random actions
-            or "idle" to let it doing nothing
+            "random_player_action" to replace action with a random action from another player or "idle" to let it doing nothing
         See rollout function for other parameters.
     """
 
     print("Starting Shapley value estimation on:", n_players,
-          "players,", num_episodes, "episodes, n_random_coalitions=", n_random_coalitions)
+          " n_random_coalitions=", n_random_coalitions)
 
     shapley_values = []
     players_ids = list(range(n_players))
@@ -59,10 +59,10 @@ def monte_carlo_shapley_values(env_name, n_players, agent, n_random_coalitions=1
 
             # Simulate num_episodes episodes on selected coalitions with and without current player
             reward_with_player = rollout(
-                agent, env_name, num_steps, num_episodes=1, coalition=coalition_with_player,
+                agent, env_name, num_steps=1, num_episodes=1, coalition=coalition_with_player,
                 verbose=False)[0]
             reward_without_player = rollout(
-                agent, env_name, num_steps, num_episodes=1,
+                agent, env_name, num_steps=1, num_episodes=1,
                 coalition=coalition_without_player, replace_missing_players=replace_missing_players,
                 verbose=False)[0]
 

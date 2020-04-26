@@ -29,7 +29,6 @@ def build_scenario(builder):
     builder.SetBallPosition(0.68, 0.0)
 
     builder.SetTeam(Team.e_Left)
-    builder.AddPlayer(-1.0, 0.0, e_PlayerRole_GK)
     builder.AddPlayer(0.6, 0.0, e_PlayerRole_CM)
     builder.AddPlayer(0.7, 0.2, e_PlayerRole_CM)
     builder.AddPlayer(0.7, -0.2, e_PlayerRole_CM)

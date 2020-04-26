@@ -298,19 +298,34 @@ def take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_ac
 def take_actions_for_coalition(env, agent, multi_obs, mapping_cache, use_lstm,
                                agent_states, prev_actions, prev_rewards, policy_agent_mapping, coalition, missing_agents_bahaviour):
     'Return actions where each agent in coalition follow the policy, others play at random if replace_missing_players=="random" or do not move if replace_missing_players=="idle'
+    def agent_id_to_name(agent_id):
+        return "agent_"+str(agent_id)
+
     actions = take_action(agent, multi_obs, mapping_cache, use_lstm,
                           agent_states, prev_actions, prev_rewards, policy_agent_mapping)
 
-    if missing_agents_bahaviour == "random":
-        missing_agents_actions = env.random_actions()
-    elif missing_agents_bahaviour == "idle":
-        missing_agents_actions = env.idle_actions()
+    if missing_agents_bahaviour == "random_player_action":
+        actions_for_coalition = actions.copy()
+        for agent_id in actions.keys():
+            if agent_id not in coalition:
+                # take dummy action
+                agent_from_name = agent_id_to_name(random.choice(coalition))
+                action = actions[agent_from_name]
+                dummy_agent_name = agent_id_to_name(agent_id)
+                actions_for_coalition[dummy_agent_name] = action
+
     else:
-        raise ValueError(
-            f"Value: {missing_agents_bahaviour} for parameter missing_agents_bahaviour is not valid. Valid values are: \"random\" or \"idle\".")
+        if missing_agents_bahaviour == "random":
+            actions_for_coalition = env.random_actions()
+        elif missing_agents_bahaviour == "idle":
+            actions_for_coalition = env.idle_actions()
 
-    for agent_id in coalition:
-        key = "agent_"+str(agent_id)
-        missing_agents_actions[key] = actions[key]
+        else:
+            raise ValueError(
+                f"Value: {missing_agents_bahaviour} for parameter missing_agents_bahaviour is not valid. Valid values are: \"random\" \"random_player_action\" or \"idle\".")
 
-    return missing_agents_actions
+        for agent_id in coalition:
+            agent_name = agent_id_to_name(agent_id)
+            actions_for_coalition[agent_name] = actions[agent_name]
+
+    return actions_for_coalition

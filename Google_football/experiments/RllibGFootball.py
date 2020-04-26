@@ -1,5 +1,6 @@
 import gym
 import gfootball.env as football_env
+import numpy as np
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 
@@ -11,9 +12,9 @@ def policy_agent_mapping(agent_name):
 class RllibGFootball(MultiAgentEnv):
     """An example of a wrapper for GFootball to make it compatible with rllib."""
 
-    def __init__(self, num_agents, env_name, render=True, save_replays=False):
+    def __init__(self, num_agents, env_name, render=True, save_replays=False, actions_are_logits=False):
         self.env = football_env.create_environment(
-            env_name=env_name, stacked=False, 
+            env_name=env_name, stacked=False,
             logdir='./replays', write_video=save_replays,
             write_goal_dumps=save_replays, write_full_episode_dumps=save_replays, render=render,
             dump_frequency=1,
@@ -25,6 +26,11 @@ class RllibGFootball(MultiAgentEnv):
             high=self.env.observation_space.high[0],
             dtype=self.env.observation_space.dtype)
         self.num_agents = num_agents
+        # MADDPG emits action logits instead of actual discrete actions
+        self.actions_are_logits = actions_are_logits
+
+    def close(self):
+        self.env.close()
 
     def reset(self):
         initial_obs = self.env.reset()
@@ -37,6 +43,13 @@ class RllibGFootball(MultiAgentEnv):
         return obs
 
     def step(self, action_dict):
+        if self.actions_are_logits:
+            # Handle MADDPG case
+            action_dict = {
+                k: np.random.choice([0, 1], p=v)
+                for k, v in action_dict.items()
+            }
+
         actions = []
         for key, value in sorted(action_dict.items()):
             actions.append(value)

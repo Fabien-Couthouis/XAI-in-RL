@@ -11,7 +11,7 @@ cmake libopenmpi-dev python3-dev zlib1g-dev
 ## Environment installation (Anaconda)
 *Note: Install Anaconda first. See [official website](https://docs.anaconda.com/anaconda/install/linux/) for further information.*
 ```bash
-conda env create -f conda_env_football.yml
+conda env create -f environment.yml
 ```
 
 ## Google football environment installation
@@ -24,12 +24,12 @@ pip3 install .
 You can start training new agents by running the `working_multiagent_google.py` script.
 Here is an example for a 11 vs 11 match (the --no-render argument is here to disable environment rendering. Remove it to watch training.):
 ```bash
-python train.py --scenario-name "11_vs_11_stochastic" --num-agents 11 --num-iters 1000 --checkpoint-freq 100
+python train.py --scenario-name "11_vs_11_stochastic" --num-agents 11 --num-iters 100000 --checkpoint-freq 1000 --run IMPALA
 ```
 
 Another example for the shapley_adversary.py scenario (3 players + the goal = 4 agents vs one adversaries player and a goal):
 ```bash
-python train.py --scenario-name "shapley_adversary" --num-agents 4 --num-iters 1000 --checkpoint-freq 100
+python train.py --scenario-name "shapley_adversary" --num-agents 4 --num-iters 1000 --checkpoint-freq 100 --run IMPALA
 ```
 
 This will create files called "checkpoints" that will be used to store model weights every **--checkpoint-freq** iterations.
@@ -41,7 +41,7 @@ They will be located on `~/ray_results/default/...`.
 * **--resume** - Resume training from last checkpoint available.
 * **--compute-shapley** - Compute Shapley values for each controlled agent.
 * **--save-replays** - Save video replays of the rollouts.
-* **--policy-type** - Choose which policy type to use between: "PPOTF"(default), "PPOTORCH", "SACTF" and "IMPALATF". 
+* **--run** - Choose which policy type to use between: "PPO", "SAV", "MADDPG" and "IMPALA". 
 
 ## Evaluating an agent
 

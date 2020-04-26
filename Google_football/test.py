@@ -194,9 +194,10 @@ def run(args, parser):
                                                         agent, n_random_coalitions=args.n_random_coalitions, replace_missing_players=args.missing_players_behaviour)
             # shapley_values = exact_shapley_values(args.env, env.num_agents, agent, num_steps,
             #                                       num_episodes, replace_missing_players=args.missing_players_behaviour)
-            ax = plot_shap_barchart(
-                shapley_values, AGENTS_NAMES[:len(shapley_values)])
+
             if args.plot_shapley:
+                _ax = plot_shap_barchart(
+                    shapley_values, AGENTS_NAMES[:len(shapley_values)])
                 plt.show()
 
         else:

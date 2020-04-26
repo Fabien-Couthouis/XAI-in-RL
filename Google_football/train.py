@@ -8,20 +8,20 @@ import gfootball.env as football_env
 import gym
 import ray
 import numpy as np
+from gym.spaces import Tuple, MultiDiscrete, Dict, Discrete, Box
 from ray import tune
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.tune.registry import register_env
-from ray.rllib.utils.framework import try_import_tf, try_import_torch
+from ray.rllib.utils.framework import try_import_tf
 from ray.tune.config_parser import make_parser
 from experiments.RllibGFootball import RllibGFootball, policy_agent_mapping
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
 from ray.rllib.agents.impala.vtrace_policy import VTraceTFPolicy
 from ray.rllib.agents.sac.sac_policy import SACTFPolicy
-
+from ray.rllib.contrib.maddpg.maddpg_policy import MADDPGTFPolicy
 
 # Try to import both backends for flag checking/warnings.
 tf = try_import_tf()
-torch, _ = try_import_torch()
 CHECKPOINT_PATH = "./multiagent-checkpoint"
 EXAMPLE_USAGE = """
 Training example via RLlib CLI:
@@ -43,56 +43,65 @@ def create_parser(parser_creator=None):
     parser.add_argument(
         "--scenario-name", default=None, help="Change scenario name.")
     parser.add_argument('--num-agents', type=int, default=None)
-    parser.add_argument('--checkpoint-freq', type=int, default=100)
     parser.add_argument('--num-iters', type=int, default=10000)
     parser.add_argument('--simple', action='store_true')
-    parser.add_argument("--ray-num-gpus", default=1, type=int,
+    parser.add_argument("--num-gpus", default=1, type=int,
                         help="number of gpus to use if starting a new cluster.")
     parser.add_argument("--resume", action="store_true",
                         help="Whether to attempt to resume previous Tune experiments.")
     parser.add_argument("--experiment-name", default="default", type=str,
                         help="Name of the subdirectory under `local_dir` to put results in.")
-    parser.add_argument('--policy-type', default="PPOTF",
-                        type=str, help="PPO|SAC|IMPALA: agent policy type to use to train the model with.")
     return parser
 
 
-def gen_policies(args):
-    'Generate policies dict {policy_name: (policy_type,obs_space, act_space, {})}'
-    if args.policy_type.upper() == "SAC":
-        policy_type = SACTFPolicy
-    elif args.policy_type.upper() == "PPO":
-        policy_type = PPOTFPolicy
-    elif args.policy_type.upper() == "IMPALA":
-        policy_type = VTraceTFPolicy
-    else:
-        raise ValueError(
-            "Policy is not valid. Valid policies are either: \"PPO\", \"IMPALA\", or \"SAC\"")
-    policy = (policy_type, obs_space, act_space)
-    agent_names = [f"agent_{agent_id}" for agent_id in range(args.num_agents)]
+def gen_policies(obs_space, act_space, num_agents):
+    'Generate policies dict {policy_name: (policy_type, obs_space, act_space, {"agent_id": i})}'
+    policy = (None, obs_space, act_space)
+    agent_names = [f"agent_{agent_id}" for agent_id in range(num_agents)]
     policies = {policy_agent_mapping(agent_name): policy + ({"agent_id": agent_id},)
                 for agent_id, agent_name in enumerate(agent_names)}
+    return policies
+
+
+def gen_policies_maddpg(obs_space, act_space, num_agents):
+    obs_space_dict = {agent_id: obs_space for agent_id in range(num_agents)}
+    act_space_dict = {agent_id: act_space for agent_id in range(num_agents)}
+
+    policy = (None, obs_space, act_space,)
+    agent_names = [f"agent_{agent_id}" for agent_id in range(num_agents)]
+    policies = {
+        policy_agent_mapping(agent_name): policy + (
+            {"agent_id": agent_id,
+             "use_local_critic": False,
+             "obs_space_dict": obs_space_dict,
+             "act_space_dict": act_space_dict},)
+        for agent_id, agent_name in enumerate(agent_names)}
     return policies
 
 
 if __name__ == '__main__':
     parser = create_parser()
     args = parser.parse_args()
-    ray.init(num_gpus=args.ray_num_gpus, lru_evict=True)
+    ray.init(num_gpus=args.num_gpus, lru_evict=True)
 
-    register_env('g_football', lambda _: RllibGFootball(
-        args.num_agents, args.scenario_name, render=False))
+    # MADDPG emits action logits instead of actual discrete actions
+    actions_are_logits = (args.run.upper() == "MADDPG")
+
+    # Create and register google football env
+    def create_env(_): return RllibGFootball(args.num_agents, args.scenario_name,
+                                             render=False, actions_are_logits=actions_are_logits)
+    register_env('g_football', create_env)
 
     # Get obs/act spaces to feed the policy with
-    single_env = RllibGFootball(
-        args.num_agents, args.scenario_name, render=False)
+    single_env = create_env(None)
     obs_space = single_env.observation_space
     act_space = single_env.action_space
+    single_env.close()
 
-    policies = gen_policies(args)
+    policies = gen_policies(obs_space, act_space,
+                            num_agents=args.num_agents)
 
-    if args.policy_type.upper().startswith("PPO"):
-
+    if args.run.upper() == "PPO":
         tune.run(
             'PPO',
             stop={'training_iteration': args.num_iters},
@@ -119,7 +128,7 @@ if __name__ == '__main__':
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
                 'batch_mode': 'truncate_episodes',
-                'num_gpus': args.ray_num_gpus,
+                'num_gpus': args.num_gpus,
                 'lr': 2.5e-4,
                 'log_level': 'WARN',
                 'multiagent': {
@@ -129,7 +138,7 @@ if __name__ == '__main__':
             },
         )
 
-    elif args.policy_type.upper().startswith("SAC"):
+    elif args.run.upper() == "SAC":
 
         tune.run(
             'SAC',
@@ -178,7 +187,7 @@ if __name__ == '__main__':
                 'num_workers': 3,
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
-                'num_gpus': args.ray_num_gpus,
+                'num_gpus': args.num_gpus,
                 'rollout_fragment_length': 50,  # NOTE: same as sample_batch_size in older versions
                 "train_batch_size": 1000,
                 'batch_mode': 'truncate_episodes',
@@ -191,7 +200,7 @@ if __name__ == '__main__':
             }
         )
 
-    elif args.policy_type.upper().startswith("IMPALA"):
+    elif args.run.upper() == "IMPALA":
 
         tune.run(
             'IMPALA',
@@ -267,7 +276,7 @@ if __name__ == '__main__':
                 'num_workers': 3,
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
-                'num_gpus': args.ray_num_gpus,
+                'num_gpus': args.num_gpus,
                 'rollout_fragment_length': 50,
                 "train_batch_size": 1000,
                 'batch_mode': 'truncate_episodes',
@@ -278,6 +287,93 @@ if __name__ == '__main__':
                 },
             }
         )
+    # elif args.run.upper() == "MADDPG":
+
+    #     tune.run(
+    #         'contrib/MADDPG',
+    #         stop={'training_iteration': args.num_iters},
+    #         checkpoint_freq=args.checkpoint_freq,
+    #         resume=args.resume,
+    #         config={
+    #             # === MADDPG SPECIFIC CONFIG ===
+    #             # === Settings for each individual policy ===
+    #             # ID of the agent controlled by this policy
+    #             # "agent_id": None,
+    #             # # Use a local critic for this policy.
+    #             # "use_local_critic": False,
+
+    #             # # # === Evaluation ===
+    #             # # # Evaluation interval
+    #             # # "evaluation_interval": None,
+    #             # # Number of episodes to run per evaluation period.
+    #             # "evaluation_num_episodes": 10,
+
+    #             # === Model ===
+    #             # Apply a state preprocessor with spec given by the "model" config option
+    #             # (like other RL algorithms). This is mostly useful if you have a weird
+    #             # observation shape, like an image. Disabled by default.
+    #             "use_state_preprocessor": False,
+    #             # Postprocess the policy network model output with these hidden layers. If
+    #             # use_state_preprocessor is False, then these will be the *only* hidden
+    #             # layers in the network.
+    #             "actor_hiddens": [64, 64],
+    #             # Hidden layers activation of the postprocessing stage of the policy
+    #             # network
+    #             "actor_hidden_activation": "relu",
+    #             # Postprocess the critic network model output with these hidden layers;
+    #             # again, if use_state_preprocessor is True, then the state will be
+    #             # preprocessed by the model specified with the "model" config option first.
+    #             "critic_hiddens": [64, 64],
+    #             # Hidden layers activation of the postprocessing state of the critic.
+    #             "critic_hidden_activation": "relu",
+    #             # N-step Q learning
+    #             "n_step": 1,
+
+    #             # Size of the replay buffer. Note that if async_updates is set, then
+    #             # each worker will have a replay buffer of this size.
+    #             "buffer_size": int(1e6),
+    #             # Observation compression. Note that compression makes simulation slow in
+    #             # MPE.
+    #             # "compress_observations": False,
+
+    #             # === Optimization ===
+    #             # Learning rate for the critic (Q-function) optimizer.
+    #             "critic_lr": 1e-2,
+    #             # Learning rate for the actor (policy) optimizer.
+    #             "actor_lr": 1e-2,
+    #             # Update the target network every `target_network_update_freq` steps.
+    #             "target_network_update_freq": 0,
+    #             # Update the target by \tau * policy + (1-\tau) * target_policy
+    #             "tau": 0.01,
+    #             # Weights for feature regularization for the actor
+    #             "actor_feature_reg": 0.001,
+    #             # If not None, clip gradients during optimization at this value
+    #             "grad_norm_clipping": 0.5,
+    #             # How many steps of the model to sample before learning starts.
+    #             "learning_starts": 1024 * 25,
+    #             # Number of env steps to optimize for before returning
+    #             "timesteps_per_iteration": 0,
+
+    #             # === Parallelism ===
+    #             # Prevent iterations from going lower than this time span
+    #             "min_iter_time_s": 0,
+    #             # === COMMON CONFIG ===
+    #             'env': 'g_football',
+    #             'num_workers': 3,
+    #             'num_envs_per_worker': 1,
+    #             'num_cpus_per_worker': 1,
+    #             'num_gpus': args.num_gpus,
+    #             'rollout_fragment_length': 100,
+    #             "train_batch_size": 1024,
+    #             'batch_mode': 'truncate_episodes',
+    #             'log_level': 'DEBUG',
+    #             'multiagent': {
+    #                 'policies': policies,
+    #                 'policy_mapping_fn': policy_agent_mapping,
+    #             },
+    #         }
+    #     )
 
     else:
-        raise ValueError(f"Unsupported algorithm: \"{args.policy_type}\"")
+        raise ValueError(
+            f"Unsupported algorithm: \"{args.run}\". Please use one of: \"PPO\", \"IMPALA\", or \"SAC\"")

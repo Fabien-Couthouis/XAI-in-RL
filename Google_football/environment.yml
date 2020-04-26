@@ -74,6 +74,7 @@ dependencies:
   - tensorflow-base=2.1.0=gpu_py37h6c5654b_0
   - tensorflow-estimator=2.1.0=pyhd54b08b_0
   - tensorflow-gpu=2.1.0=h0d30ee6_0
+  - tensorflow-probability>=0.7
   - termcolor=1.1.0=py37_1
   - tk=8.6.8=hbc83047_0
   - urllib3=1.25.8=py37_0

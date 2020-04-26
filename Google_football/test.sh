@@ -1,1 +1,1 @@
-python test.py models/PPO/shapley_adversary/checkpoint_2250/checkpoint-2250 --env gfootball --run PPO --scenario-name "shapley_adversary" --episodes 1 --num-agents 4 --save-replays --compute-shapley --n-random-coalitions 50 --plot-shapley --no-render #--idle-missing-agents
+python test.py models/PPO/shapley_adversary/checkpoint_2250/checkpoint-2250 --env gfootball --run PPO --scenario-name "shapley_adversary" --episodes 1 --num-agents 4 --no-render # --save-replays --compute-shapley --n-random-coalitions 50 --plot-shapley --no-render #--idle-missing-agents
