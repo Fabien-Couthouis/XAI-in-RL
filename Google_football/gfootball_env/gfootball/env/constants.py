@@ -26,7 +26,7 @@ EXPOSED_OBSERVATIONS = {
     'ball_owned_player', 'left_team', 'left_team_direction',
     'left_team_tired_factor', 'left_team_yellow_card', 'left_team_number_passes', 'left_team_active',
     'left_team_roles', 'right_team', 'right_team_direction',
-    'right_team_tired_factor', 'right_team_yellow_card', 'right_team_number_passes' 'right_team_active',
+    'right_team_tired_factor', 'right_team_yellow_card', 'right_team_number_passes', 'right_team_active',
     'right_team_roles', 'active', 'sticky_actions', 'score', 'steps_left',
     'game_mode'
 }

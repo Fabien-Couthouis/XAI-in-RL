@@ -797,8 +797,10 @@ void Match::GetTeamState(SharedInfo *state,
       if (player->HasPossession() && GetLastTouchTeamID() != -1 &&
           GetLastTouchTeam()->GetLastTouchPlayer() == player) {
         DO_VALIDATION;
-        info.number_passes = 1 + player->GetNumberPasses();
-        player->SetNumberPasses(info.number_passes); 
+        if (state->ball_owned_player != team.size()) {
+          info.number_passes = 1 + player->GetNumberPasses();
+          player->SetNumberPasses(info.number_passes);
+        } 
         state->ball_owned_player = team.size();
         state->ball_owned_team = GetLastTouchTeamID();
       }
