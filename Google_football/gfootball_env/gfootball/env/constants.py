@@ -24,9 +24,9 @@ PHYSICS_STEPS_PER_SECOND = 100
 EXPOSED_OBSERVATIONS = {
     'ball', 'ball_direction', 'ball_rotation', 'ball_owned_team',
     'ball_owned_player', 'left_team', 'left_team_direction',
-    'left_team_tired_factor', 'left_team_yellow_card', 'left_team_number_passes', 'left_team_active',
+    'left_team_tired_factor', 'left_team_yellow_card', 'left_team_number_passes', 'left_team_number_frames_holding_ball', 'left_team_active',
     'left_team_roles', 'right_team', 'right_team_direction',
-    'right_team_tired_factor', 'right_team_yellow_card', 'right_team_number_passes', 'right_team_active',
+    'right_team_tired_factor', 'right_team_yellow_card', 'right_team_number_passes', 'right_team_number_frames_holding_ball', 'right_team_active',
     'right_team_roles', 'active', 'sticky_actions', 'score', 'steps_left',
     'game_mode'
 }

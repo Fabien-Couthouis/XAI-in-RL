@@ -800,7 +800,9 @@ void Match::GetTeamState(SharedInfo *state,
         if (state->ball_owned_player != team.size()) {
           info.number_passes = 1 + player->GetNumberPasses();
           player->SetNumberPasses(info.number_passes);
-        } 
+        }
+        info.number_frames_holding_ball = 1 + player->GetNumberFramesHoldingBall();
+        player->SetNumberFramesHoldingBall(info.number_frames_holding_ball); 
         state->ball_owned_player = team.size();
         state->ball_owned_team = GetLastTouchTeamID();
       }

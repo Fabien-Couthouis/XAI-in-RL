@@ -99,6 +99,7 @@ BOOST_PYTHON_MODULE(_gameplayfootball) {
       .def_readonly("has_card", &PlayerInfo::has_card)
       .def_readonly("is_active", &PlayerInfo::is_active)
       .def_readonly("number_passes", &PlayerInfo::number_passes)
+      .def_readonly("number_frames_holding_ball", &PlayerInfo::number_frames_holding_ball)
       .def_readonly("role", &PlayerInfo::role);
 
   class_<ControllerInfo>("ControllerInfo", init<int>())
