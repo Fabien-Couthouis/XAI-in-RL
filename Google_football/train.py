@@ -128,7 +128,7 @@ if __name__ == '__main__':
                 'num_envs_per_worker': 1,
                 'num_cpus_per_worker': 1,
                 'batch_mode': 'truncate_episodes',
-                'num_gpus': args.ray_num_gpus,
+                'num_gpus': args.num_gpus,
                 'lr': 5e-4,
                 'log_level': 'WARN',
                 'multiagent': {
