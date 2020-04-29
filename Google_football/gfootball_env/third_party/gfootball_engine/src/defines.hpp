@@ -265,6 +265,7 @@ struct PlayerInfo {
   bool is_active = true;
   int number_passes = 0;
   int number_frames_holding_ball = 0;
+  int number_goals = 0;
   float tired_factor = 0.0f; // In the [0..1] range.
   e_PlayerRole role = e_PlayerRole_GK;
 };

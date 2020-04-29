@@ -321,6 +321,7 @@ class FootballEnvCore(object):
     roles = []
     number_passes = []
     number_frames_holding_ball = []
+    number_goals = []
     for player in players:
       positions.append(player.position[0])
       positions.append(player.position[1])
@@ -332,6 +333,7 @@ class FootballEnvCore(object):
       roles.append(player.role)
       number_passes.append(player.number_passes)
       number_frames_holding_ball.append(player.number_frames_holding_ball)
+      number_goals.append(player.number_goals)
     result[name] = np.reshape(np.array(positions), [-1, 2])
     # Players' movement direction represented as [x, y] distance per step.
     result['{}_direction'.format(name)] = np.reshape(

@@ -794,6 +794,11 @@ void Match::GetTeamState(SharedInfo *state,
       info.has_card = player->HasCards();
       info.is_active = player->IsActive();
       info.role = player->GetFormationEntry().role;
+      if (IsBallInGoal() && GetLastGoalTeam()->GetLastTouchPlayer() == player) 
+      {
+        info.number_goals = 1 + player->GetNumberGoals();
+        player->SetNumberGoals(info.number_goals);
+      }
       if (player->HasPossession() && GetLastTouchTeamID() != -1 &&
           GetLastTouchTeam()->GetLastTouchPlayer() == player) {
         DO_VALIDATION;
