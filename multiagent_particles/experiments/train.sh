@@ -1,0 +1,1 @@
+python run.py --scenario "simple_tag"  --good-policy "ddpg" --num-adversaries 3 --save-dir "saves/model/run_3" --num-episodes 1000000 --save-rate 10000 --exp-name run_3

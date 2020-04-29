@@ -1,12 +1,3 @@
-#Sandbox file 
-sandbox.py
-
-#Vscode folder
-.vscode
-
-#Vscode files
-.#Vscode
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -62,8 +53,9 @@ coverage.xml
 
 # Django stuff:
 *.log
+.static_storage/
+.media/
 local_settings.py
-db.sqlite3
 
 # Flask stuff:
 instance/
