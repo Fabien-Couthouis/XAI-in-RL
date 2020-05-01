@@ -3,12 +3,16 @@ import multiagent.scenarios as scenarios
 import numpy as np
 from gym import spaces
 
+AGENTS_COLORS = [[0.85, 0.35, 0.35], [0.25, 0.75, 0.95],
+                 [0.95, 0.55, 0.05], [0.35, 0.85, 0.35]]
+
 
 class EnvWrapper(MultiAgentEnv):
     def __init__(self, scenario_name, benchmark=False):
         scenario = scenarios.load(scenario_name + ".py").Scenario()
         # create world
         world = scenario.make_world()
+
         # create multiagent environment
         if benchmark:
             super().__init__(world, scenario.reset_world, scenario.reward,
@@ -16,6 +20,11 @@ class EnvWrapper(MultiAgentEnv):
         else:
             super().__init__(world, scenario.reset_world,
                              scenario.reward, scenario.observation)
+
+        # Set agent colors
+        for i in range(len(world.agents)):
+            if i < len(AGENTS_COLORS):
+                world.agents[i].color = AGENTS_COLORS[i]
 
     def random_actions(self):
         'Return: list of random actions for each agent '

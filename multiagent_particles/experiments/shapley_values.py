@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import pickle
+import csv
 from itertools import combinations, permutations
 from statistics import mean
 from math import factorial
@@ -39,7 +40,7 @@ def monte_carlo_shapley_estimation(env, arglist, M, num_episodes=1):
             features, feature)
         print(with_player)
         marginal_contributions = []
-        for _ in range(M):
+        for m in range(M):
             coalition_with_player = random.choice(with_player)
             coalition_without_player = coalition_with_player.copy().remove(feature)
 
@@ -51,9 +52,13 @@ def monte_carlo_shapley_estimation(env, arglist, M, num_episodes=1):
             marginal_contribution = (
                 sum(values_with_player)-sum(values_without_player))/num_episodes
             marginal_contributions.append(marginal_contribution)
+            save_margial_contrib(arglist, feature, m, marginal_contribution)
 
-        estimated_values.append(
-            sum(marginal_contributions)/len(marginal_contributions))
+        # TODO: normalization (minmax?)
+
+        shapley_value = sum(
+            marginal_contributions)/len(marginal_contributions)
+        estimated_values.append(shapley_value)
 
     file_name = f"{arglist.plots_dir}{arglist.exp_name}_shapley_values.pkl"
     with open(file_name, 'wb') as fp:
@@ -63,6 +68,13 @@ def monte_carlo_shapley_estimation(env, arglist, M, num_episodes=1):
 
     return estimated_values
 
+
+def save_margial_contrib(arglist, feature, m, marginal_contribution):
+    'Keep track of rewards in csv file'
+    file_name = f"{arglist.save_dir}/{arglist.exp_name}/shapley_values.csv"
+    with open(file_name, "a", newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=",")
+        writer.writerow([feature, m, marginal_contribution])
 
 # def get_marginal_contributions(env, features, num_episodes, behaviour_nets):
 #     'Get mean reward for each agent for each coalitions '

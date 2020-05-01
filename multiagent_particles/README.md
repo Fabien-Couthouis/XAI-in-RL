@@ -85,7 +85,10 @@ has been provided), but does not continue training (default: `False`)
 
 - `--benchmark-dir`: directory where benchmarking data is saved (default: `"./benchmark_files/"`)
 
-- `--plots-dir`: directory where training curves are saved (default: `"./learning_curves/"`)
+- `--shapley-M`: compute or not shapley values with given number of simulation episodes (M) (default: `None`)
+
+- `--missing-agents-behaviour`: behaviour of agent not in the coalition: `random_player` (take a random player mode from a from in the coalition) or `random` (random move) or `idle` (do not move) (default: `random_player`)
+
 
 ## Code structure
 

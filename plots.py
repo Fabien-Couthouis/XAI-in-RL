@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import pickle
 from typing import List
 
 plt.style.use('bmh')
@@ -37,7 +38,7 @@ def plot_model_rewards(agent_rewards: List[float], agent_names: List[str]):
     leg = ax.legend(agent_names)
     # Set legend dragable to move it outside plots if needed
     leg.set_draggable(True)
-    ax.set_title(f"Reward per episode on {len(agent_rewards[0])} runs")
+    ax.set_title(f"Reward per episode on {len(agent_rewards[0])} episodes")
     fig.tight_layout()
     return fig, ax
 
@@ -82,6 +83,12 @@ def cat_plot(player_names: List[str], shapley_values: List[float], methods: List
     return ax
 
 
+def load_rewards(path: str):
+    with open(path, 'rb') as file:
+        rewards = pickle.load(file)
+    return rewards
+
+
 if __name__ == "__main__":
     # Replace example values by yours! :)
     agent_names = ["agent1", "agent2", "agent3", "agent4"]
@@ -95,10 +102,17 @@ if __name__ == "__main__":
     shapley_values_2 = [34, 38, 30, 32, 16, 15, 14, 25, 23, 25]
     methods = ['random', "random", 'idle', 'random_player', 'random',
                'idle', 'random_player', 'random', 'idle', 'random_player']
+    rewards = load_rewards(
+        "multiagent_particles/experiments/learning_curves/run_6_rewards.pkl")
+    plot_model_rewards([rewards], ["MADDPG (run 1)"])
+    agrewards = load_rewards(
+        "multiagent_particles/experiments/learning_curves/run_6_agrewards.pkl")
+    plot_model_rewards([agrewards], ["MADDPG (run 1)"])
+    print(agrewards)
 
     # plot_model_rewards(agent_rewards, model_names)
     # plot_shap_barchart(shapley_values, agent_names)
     # plot_shap_piechart(shapley_values, agent_names)
-    cat_plot(player_names, shapley_values_2, methods)
+    # cat_plot(player_names, shapley_values_2, methods)
 
     plt.show()

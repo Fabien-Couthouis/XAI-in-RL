@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import time
 import pickle
-
+import csv
 import maddpg.common.tf_util as U
 from env_wrapper import EnvWrapper
 from utils import get_trainers, mlp_model
@@ -52,12 +52,10 @@ def parse_args():
                         help="number of iterations run for benchmarking")
     parser.add_argument("--benchmark-dir", type=str, default="./benchmark_files/",
                         help="directory where benchmark data is saved")
-    parser.add_argument("--plots-dir", type=str, default="./learning_curves/",
-                        help="directory where plot data is saved")
     parser.add_argument("--shapley-M", type=int, default=None,
                         help="compute or not shapley values with given number of simulation episodes (M)")
     parser.add_argument("--missing-agents-behaviour", type=str, default="random_agent",
-                        help="behaviour of agent not in the coalition: random_agent (take a random player mode from a from in the coalition) or random (random move) or idle (do not move)")
+                        help="behaviour of agent not in the coalition: random_player (take a random player mode from a from in the coalition) or random (random move) or idle (do not move)")
     return parser.parse_args()
 
 
@@ -101,17 +99,16 @@ def train(env, arglist):
         episode_rewards = [0.0]  # sum of rewards for all agents
         agent_rewards = [[0.0]
                          for _ in range(env.n)]  # individual agent reward
-        final_ep_rewards = []  # sum of rewards for training curve
-        final_ep_ag_rewards = []  # agent rewards for training curve
         agent_info = [[[]]]  # placeholder for benchmarking info
         saver = tf.train.Saver()
         obs_n = env.reset()
         episode_step = 0
         train_step = 0
-        t_start = time.time()
 
         print('Starting iterations...')
         while True:
+            t_start = time.time()
+
             # get action
             action_n = [agent.action(obs)
                         for agent, obs in zip(trainers, obs_n)]
@@ -166,44 +163,42 @@ def train(env, arglist):
             for agent in trainers:
                 loss = agent.update(trainers, train_step)
 
+            episode = len(episode_rewards)
             # save model, display training output
-            if terminal and (len(episode_rewards) % arglist.save_rate == 0):
+            if terminal and (episode % arglist.save_rate == 0):
+                mean_reward = np.mean(episode_rewards[-arglist.save_rate:])
+                agents_episode_rewards = [
+                    np.mean(rew[-arglist.save_rate:]) for rew in agent_rewards]
+                time_spent = round(time.time()-t_start, 3)
+
                 U.save_state(
-                    f"{arglist.save_dir}/episode_{len(episode_rewards)}/model", saver=saver)
+                    f"{arglist.save_dir}/{arglist.exp_name}/episode_{len(episode_rewards)}/model", saver=saver)
                 # print statement depends on whether or not there are adversaries
                 if num_adversaries == 0:
                     print("steps: {}, episodes: {}, mean episode reward: {}, time: {}".format(
-                        train_step, len(episode_rewards), np.mean(episode_rewards[-arglist.save_rate:]), round(time.time()-t_start, 3)))
+                        train_step, len(episode_rewards), mean_reward, time_spent))
                 else:
                     print("steps: {}, episodes: {}, mean episode reward: {}, agent episode reward: {}, time: {}".format(
-                        train_step, len(episode_rewards), np.mean(
-                            episode_rewards[-arglist.save_rate:]),
-                        [np.mean(rew[-arglist.save_rate:]) for rew in agent_rewards], round(time.time()-t_start, 3)))
-                t_start = time.time()
-                # Keep track of final episode reward
-                final_ep_rewards.append(
-                    np.mean(episode_rewards[-arglist.save_rate:]))
-                for rew in agent_rewards:
-                    final_ep_ag_rewards.append(
-                        np.mean(rew[-arglist.save_rate:]))
-                save_reward(arglist, final_ep_rewards, final_ep_ag_rewards)
+                        train_step, len(episode_rewards), mean_reward, agents_episode_rewards, time_spent))
+
+                # Keep track of rewards
+                save_rewards(arglist, episode, mean_reward,
+                             agents_episode_rewards)
 
             # saves final episode reward for plotting training curve later
-            if len(episode_rewards) > arglist.num_episodes:
-                save_reward(arglist, final_ep_rewards, final_ep_ag_rewards)
-
+            if len(episode_rewards) >= arglist.num_episodes:
                 print('...Finished total of {} episodes.'.format(
                     len(episode_rewards)))
                 break
 
 
-def save_reward(arglist, final_ep_rewards, final_ep_ag_rewards):
-    rew_file_name = arglist.plots_dir + arglist.exp_name + '_rewards.pkl'
-    with open(rew_file_name, 'wb') as fp:
-        pickle.dump(final_ep_rewards, fp)
-    agrew_file_name = arglist.plots_dir + arglist.exp_name + '_agrewards.pkl'
-    with open(agrew_file_name, 'wb') as fp:
-        pickle.dump(final_ep_ag_rewards, fp)
+def save_rewards(arglist, episode, mean_reward, agents_episode_rewards):
+    'Keep track of rewards in csv file'
+    file_name = f"{arglist.save_dir}/{arglist.exp_name}/rewards.csv"
+    with open(file_name, "a", newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=",")
+        writer.writerow([episode, mean_reward] +
+                        [ag_rew for ag_rew in agents_episode_rewards])
 
 
 if __name__ == '__main__':
