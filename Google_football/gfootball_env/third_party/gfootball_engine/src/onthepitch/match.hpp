@@ -113,7 +113,9 @@ class Match {
 
     Player *GetDesignatedPossessionPlayer() { DO_VALIDATION; return designatedPossessionPlayer; }
     Player *GetBallRetainer() { DO_VALIDATION; return ballRetainer; }
+    Player *GetPreviousBallRetainer() {DO_VALIDATION; return previousBallRetainer;}
     void SetBallRetainer(Player *retainer) { DO_VALIDATION;
+      previousBallRetainer = ballRetainer;
       ballRetainer = retainer;
     }
 

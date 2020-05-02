@@ -323,6 +323,7 @@ class FootballEnvCore(object):
     number_frames_holding_ball = []
     number_goals = []
     distance_to_goal = []
+    number_successive_defenses = []
     for player in players:
       positions.append(player.position[0])
       positions.append(player.position[1])
@@ -336,6 +337,7 @@ class FootballEnvCore(object):
       number_frames_holding_ball.append(player.number_frames_holding_ball)
       number_goals.append(player.number_goals)
       distance_to_goal.append(player.distance_to_goal)
+      number_successive_defenses.append(player.number_successive_defenses)
     result[name] = np.reshape(np.array(positions), [-1, 2])
     # Players' movement direction represented as [x, y] distance per step.
     result['{}_direction'.format(name)] = np.reshape(
@@ -347,6 +349,10 @@ class FootballEnvCore(object):
     result['{}_roles'.format(name)] = np.array(roles)
     result['{}_number_passes'.format(name)] = np.array(number_passes)
     result['{}_number_frames_holding_ball'.format(name)] = np.array(number_frames_holding_ball)
+    result['{}_number_goals'.format(name)] = np.array(number_goals)
+    result['{}_distance_to_goal'.format(name)] = np.array(distance_to_goal)
+    result['{}_number_successive_defenses'.format(name)] = np.array(number_successive_defenses)
+    
 
   def observation(self):
     """Returns the current observation of the game."""
