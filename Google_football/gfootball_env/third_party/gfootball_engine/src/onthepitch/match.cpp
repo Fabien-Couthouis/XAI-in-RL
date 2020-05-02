@@ -794,6 +794,7 @@ void Match::GetTeamState(SharedInfo *state,
       info.has_card = player->HasCards();
       info.is_active = player->IsActive();
       info.role = player->GetFormationEntry().role;
+      info.distance_to_goal = player->GetTacticalSituation().forwardRating;
       if (IsBallInGoal() && GetLastGoalTeam()->GetLastTouchPlayer() == player) 
       {
         info.number_goals = 1 + player->GetNumberGoals();

@@ -101,6 +101,7 @@ BOOST_PYTHON_MODULE(_gameplayfootball) {
       .def_readonly("number_passes", &PlayerInfo::number_passes)
       .def_readonly("number_frames_holding_ball", &PlayerInfo::number_frames_holding_ball)
       .def_readonly("number_goals", &PlayerInfo::number_goals)
+      .def_readonly("distance_to_goal", &PlayerInfo::distance_to_goal)
       .def_readonly("role", &PlayerInfo::role);
 
   class_<ControllerInfo>("ControllerInfo", init<int>())

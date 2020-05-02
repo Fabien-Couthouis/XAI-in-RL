@@ -209,6 +209,7 @@ class Match {
     Team* bestPossessionTeam = 0;
     Player *designatedPossessionPlayer;
     Player *ballRetainer;
+    Player *previousBallRetainer;
 
     ValueHistory<float> possessionSideHistory;
 

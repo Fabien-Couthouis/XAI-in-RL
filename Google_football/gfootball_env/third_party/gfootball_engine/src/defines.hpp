@@ -246,6 +246,7 @@ struct PlayerInfo {
     is_active = f.is_active;
     number_passes = f.number_passes;
     number_frames_holding_ball = f.number_frames_holding_ball;
+    distance_to_goal = f.distance_to_goal;
     tired_factor = f.tired_factor;
     role = f.role;
   }
@@ -256,6 +257,7 @@ struct PlayerInfo {
         is_active == f.is_active &&
         tired_factor == f.tired_factor &&
         number_passes == f.number_passes &&
+        distance_to_goal == f.distance_to_goal &&
         number_frames_holding_ball == f.number_frames_holding_ball &&
         role == f.role;
   }
@@ -263,6 +265,7 @@ struct PlayerInfo {
   Position player_direction;
   bool has_card = false;
   bool is_active = true;
+  float distance_to_goal = 0.0f;
   int number_passes = 0;
   int number_frames_holding_ball = 0;
   int number_goals = 0;
