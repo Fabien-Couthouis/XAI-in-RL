@@ -248,6 +248,7 @@ struct PlayerInfo {
     number_frames_holding_ball = f.number_frames_holding_ball;
     distance_to_goal = f.distance_to_goal;
     number_successive_defenses = f.number_successive_defenses;
+    number_goals = f.number_goals;
     tired_factor = f.tired_factor;
     role = f.role;
   }
@@ -259,6 +260,7 @@ struct PlayerInfo {
         tired_factor == f.tired_factor &&
         number_passes == f.number_passes &&
         distance_to_goal == f.distance_to_goal &&
+        number_goals == f.number_goals &&
         number_frames_holding_ball == f.number_frames_holding_ball &&
         number_successive_defenses == f.number_successive_defenses &&
         role == f.role;

@@ -360,7 +360,7 @@ void Match::RandomizeAdboards(boost::intrusive_ptr<Node> stadiumNode) {
     DO_VALIDATION;
     adboardSurfaces.push_back(GetContext().surface_manager.Fetch(files[i]));
   }
-  if (adboardSurfaces.empty()) return;
+  if (adboardSurfaces.empty()) return; 
 
 
   // collect adboard geoms
@@ -795,9 +795,11 @@ void Match::GetTeamState(SharedInfo *state,
       info.is_active = player->IsActive();
       info.role = player->GetFormationEntry().role;
       info.distance_to_goal = player->GetTacticalSituation().forwardRating;
-      if (GetPreviousBallRetainer()->GetTeamID() != player->GetTeamID() && player->GetCurrentFunctionType() == e_FunctionType_LongPass) {
-        info.number_successive_defenses = 1 + player->GetNumberSuccessiveDefenses();
-        player->SetNumberSuccessiveDefenses(info.number_successive_defenses);
+      if (GetPreviousBallRetainer() != NULL) {
+        if (GetPreviousBallRetainer()->GetTeamID() != player->GetTeamID() && player->GetCurrentFunctionType() == e_FunctionType_LongPass) {
+          info.number_successive_defenses = 1 + player->GetNumberSuccessiveDefenses();
+          player->SetNumberSuccessiveDefenses(info.number_successive_defenses);
+        }
       }
       if (IsBallInGoal() && GetLastGoalTeam()->GetLastTouchPlayer() == player) 
       {
