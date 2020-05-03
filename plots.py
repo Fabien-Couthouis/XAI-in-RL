@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import pickle
+import os
+from pathlib import Path
 from typing import List
 
 plt.style.use('bmh')
@@ -25,20 +28,24 @@ def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
     return fig, ax
 
 
-def plot_model_rewards(agent_rewards: List[float], agent_names: List[str]):
+def plot_model_rewards_pp(path: str):
     'Plot: reward per episode for each agent'
     fig, ax = plt.subplots()
 
-    for rewards in agent_rewards:
-        x = range(1, len(rewards)+1)
-        ax.plot(x, rewards)
-    ax.set_xlabel('Episode')
-    ax.set_ylabel('Reward')
+    all_files = [path for path in Path(path).rglob('*.csv')]
+    names = ["episode", "reward", "r1", "r2", "r3", "r4"]
 
-    leg = ax.legend(agent_names)
-    # Set legend dragable to move it outside plots if needed
-    leg.set_draggable(True)
-    ax.set_title(f"Reward per episode on {len(agent_rewards[0])} episodes")
+    df = pd.concat((pd.read_csv(f, names=names)
+                    for f in all_files))
+    df['sum_good_agents'] = df['r1']+df['r2']+df['r3']
+
+    ax = sns.lineplot(x="episode", y="sum_good_agents", data=df)
+    ax.set_xlabel('Training episode number')
+    ax.set_ylabel('Reward for predators (averrage over 5 models)')
+    # ax.set_title(f"Reward per episode on {len(agent_rewards[0])} episodes")
+
+    # Set 1e label
+    plt.ticklabel_format(style='sci', axis='x', scilimits=(0, 0))
     fig.tight_layout()
     return fig, ax
 
@@ -83,10 +90,34 @@ def cat_plot(player_names: List[str], shapley_values: List[float], methods: List
     return ax
 
 
-def load_rewards(path: str):
-    with open(path, 'rb') as file:
-        rewards = pickle.load(file)
-    return rewards
+def load_cat_plot_data_pp(path: str):
+    all_files = [path for path in Path(path).rglob('*.csv')]
+
+    names = ["player", "m", "missing_agents_behaviour", "discounted_rewards_with_player_gamma_1", "discounted_rewards_with_player_gamma_0.99",
+             "discounted_rewards_with_player_gamma_0.95", "discounted_rewards_with_player_gamma_0.90",
+             "discounted_rewards_without_player_gamma_1", "discounted_rewards_without_player_gamma_0.99",
+             "discounted_rewards_without_player_gamma_0.95", "discounted_rewards_without_player_gamma_0.90"]
+    player_names_list = []
+    methods_list = []
+    shapley_values = []
+    for f in all_files:
+        df = pd.read_csv(f, names=names)
+        player_names = df["player"].unique()
+        methods = df["missing_agents_behaviour"].unique()
+        for method in methods:
+            for player in player_names:
+                df_sel = df[df['player'] == player]
+                df_sel = df_sel[df_sel['missing_agents_behaviour'] == method]
+                dr_with = df_sel['discounted_rewards_with_player_gamma_1']
+                dr_without = df_sel['discounted_rewards_without_player_gamma_1']
+
+                shapley_value = np.mean(dr_with-dr_without)
+
+                player_names_list.append(player)
+                methods_list.append(method)
+                shapley_values.append(shapley_value)
+
+    return player_names_list, shapley_values, methods_list
 
 
 if __name__ == "__main__":
@@ -102,15 +133,13 @@ if __name__ == "__main__":
     shapley_values_2 = [34, 38, 30, 32, 16, 15, 14, 25, 23, 25]
     methods = ['random', "random", 'idle', 'random_player', 'random',
                'idle', 'random_player', 'random', 'idle', 'random_player']
-    rewards = load_rewards(
-        "multiagent_particles/experiments/learning_curves/run_6_rewards.pkl")
-    plot_model_rewards([rewards], ["MADDPG (run 1)"])
-    agrewards = load_rewards(
-        "multiagent_particles/experiments/learning_curves/run_6_agrewards.pkl")
-    plot_model_rewards([agrewards], ["MADDPG (run 1)"])
-    print(agrewards)
 
-    # plot_model_rewards(agent_rewards, model_names)
+    path_pp_models = r"multiagent_particles/experiments/saves"
+    plot_model_rewards_pp(path=path_pp_models)
+    path_pp_mc = r"multiagent_particles\experiments\marginal_contributions"
+    # data = load_cat_plot_data_pp(path_pp_mc)
+    # cat_plot(*data)
+
     # plot_shap_barchart(shapley_values, agent_names)
     # plot_shap_piechart(shapley_values, agent_names)
     # cat_plot(player_names, shapley_values_2, methods)

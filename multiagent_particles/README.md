@@ -73,8 +73,8 @@ by following the `README`.
 
 ### Evaluation
 
-- `--restore`: restores previous training state stored in `load-dir` (or in `save-dir` if no `load-dir`
-has been provided), and continues training (default: `False`)
+- `--restore-episode`: restores previous training state stored in `load-dir` (or in `save-dir` if no `load-dir`
+has been provided), and continues training from the episode number provided. Do not restore if 0 is provided (default: `0`)
 
 - `--display`: displays to the screen the trained policy stored in `load-dir` (or in `save-dir` if no `load-dir`
 has been provided), but does not continue training (default: `False`)

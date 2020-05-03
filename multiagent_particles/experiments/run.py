@@ -19,13 +19,13 @@ def parse_args():
     parser.add_argument("--max-episode-len", type=int,
                         default=25, help="maximum episode length")
     parser.add_argument("--num-episodes", type=int,
-                        default=100000, help="number of episodes")
+                        default=1000000, help="number of episodes")
     parser.add_argument("--num-adversaries", type=int,
-                        default=0, help="number of adversaries")
+                        default=1, help="number of adversaries")
     parser.add_argument("--good-policy", type=str,
                         default="maddpg", help="policy for good agents")
     parser.add_argument("--adv-policy", type=str,
-                        default="maddpg", help="policy of adversaries")
+                        default="ddpg", help="policy of adversaries")
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="learning rate for Adam optimizer")
@@ -33,7 +33,7 @@ def parse_args():
                         default=0.95, help="discount factor")
     parser.add_argument("--batch-size", type=int, default=1024,
                         help="number of episodes to optimize at the same time")
-    parser.add_argument("--num-units", type=int, default=64,
+    parser.add_argument("--num-units", type=int, default=128,
                         help="number of units in the mlp")
     # Checkpointing
     parser.add_argument("--exp-name", type=str, default=None,
@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument("--load-dir", type=str, default="saves/model",
                         help="directory in which training state and model are loaded")
     # Evaluation
-    parser.add_argument("--restore", action="store_true", default=False)
+    parser.add_argument("--restore-episode", type=int, default=0)
     parser.add_argument("--display", action="store_true", default=False)
     parser.add_argument("--benchmark", action="store_true", default=False)
     parser.add_argument("--benchmark-iters", type=int, default=100000,
@@ -54,7 +54,7 @@ def parse_args():
                         help="directory where benchmark data is saved")
     parser.add_argument("--shapley-M", type=int, default=None,
                         help="compute or not shapley values with given number of simulation episodes (M)")
-    parser.add_argument("--missing-agents-behaviour", type=str, default="random_agent",
+    parser.add_argument("--missing-agents-behaviour", type=str, default="random_player",
                         help="behaviour of agent not in the coalition: random_player (take a random player mode from a from in the coalition) or random (random move) or idle (do not move)")
     return parser.parse_args()
 
@@ -92,7 +92,7 @@ def train(env, arglist):
         # Load previous results, if necessary
         if arglist.load_dir == "":
             arglist.load_dir = arglist.save_dir
-        if arglist.display or arglist.restore or arglist.benchmark:
+        if arglist.display or arglist.restore_episode != 0 or arglist.benchmark:
             print('Loading previous state...')
             U.load_state(arglist.load_dir)
 
@@ -104,11 +104,10 @@ def train(env, arglist):
         obs_n = env.reset()
         episode_step = 0
         train_step = 0
+        t_start = time.time()
 
         print('Starting iterations...')
         while True:
-            t_start = time.time()
-
             # get action
             action_n = [agent.action(obs)
                         for agent, obs in zip(trainers, obs_n)]
@@ -157,38 +156,37 @@ def train(env, arglist):
                 continue
 
             # update all trainers, if not in display or benchmark mode
-            loss = None
             for agent in trainers:
                 agent.preupdate()
             for agent in trainers:
                 loss = agent.update(trainers, train_step)
 
-            episode = len(episode_rewards)
+            episode = len(episode_rewards) + arglist.restore_episode
             # save model, display training output
-            if terminal and (episode % arglist.save_rate == 0):
+            if (done or terminal) and (episode % arglist.save_rate == 0):
                 mean_reward = np.mean(episode_rewards[-arglist.save_rate:])
                 agents_episode_rewards = [
                     np.mean(rew[-arglist.save_rate:]) for rew in agent_rewards]
                 time_spent = round(time.time()-t_start, 3)
 
                 U.save_state(
-                    f"{arglist.save_dir}/{arglist.exp_name}/episode_{len(episode_rewards)}/model", saver=saver)
+                    f"{arglist.save_dir}/{arglist.exp_name}/episode_{episode}/model", saver=saver)
                 # print statement depends on whether or not there are adversaries
                 if num_adversaries == 0:
                     print("steps: {}, episodes: {}, mean episode reward: {}, time: {}".format(
-                        train_step, len(episode_rewards), mean_reward, time_spent))
+                        train_step, episode, mean_reward, time_spent))
                 else:
                     print("steps: {}, episodes: {}, mean episode reward: {}, agent episode reward: {}, time: {}".format(
-                        train_step, len(episode_rewards), mean_reward, agents_episode_rewards, time_spent))
+                        train_step, episode, mean_reward, agents_episode_rewards, time_spent))
+                t_start = time.time()
 
                 # Keep track of rewards
                 save_rewards(arglist, episode, mean_reward,
                              agents_episode_rewards)
 
             # saves final episode reward for plotting training curve later
-            if len(episode_rewards) >= arglist.num_episodes:
-                print('...Finished total of {} episodes.'.format(
-                    len(episode_rewards)))
+            if episode >= arglist.num_episodes:
+                print('...Finished total of {} episodes.'.format(episode))
                 break
 
 
@@ -208,6 +206,6 @@ if __name__ == '__main__':
 
     if arglist.shapley_M is not None:
         monte_carlo_shapley_estimation(
-            env, arglist, arglist.shapley_M, num_episodes=1)
+            env, arglist, arglist.shapley_M)
     else:
         train(env, arglist)

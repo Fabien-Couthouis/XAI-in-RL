@@ -1,1 +1,2 @@
-python run.py --scenario "simple_tag"  --good-policy "ddpg" --num-adversaries 3 --save-dir "saves" --num-episodes 5000000 --save-rate 10000 --exp-name run_x
+python run.py --scenario "simple_tag" --save-dir "saves" --num-episodes 1000000 --save-rate 1000 --exp-name run_x
+#python run.py --save-dir saves --num-episodes 200000 --load-dir saves/run_12/episode_35000/model --restore-episode 35000
