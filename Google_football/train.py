@@ -63,20 +63,36 @@ def gen_policies(obs_space, act_space, num_agents):
     return policies
 
 
-def gen_policies_maddpg(obs_space, act_space, num_agents):
-    obs_space_dict = {agent_id: obs_space for agent_id in range(num_agents)}
-    act_space_dict = {agent_id: act_space for agent_id in range(num_agents)}
+# def gen_policies_maddpg(obs_space, act_space, num_agents):
 
-    policy = (None, obs_space, act_space,)
-    agent_names = [f"agent_{agent_id}" for agent_id in range(num_agents)]
-    policies = {
-        policy_agent_mapping(agent_name): policy + (
-            {"agent_id": agent_id,
-             "use_local_critic": False,
-             "obs_space_dict": obs_space_dict,
-             "act_space_dict": act_space_dict},)
-        for agent_id, agent_name in enumerate(agent_names)}
-    return policies
+#     policy = (None, obs_space, act_space,)
+#     agent_names = [f"agent_{agent_id}" for agent_id in range(num_agents)]
+
+#     policies = {
+#         policy_agent_mapping(agent_name): policy + (
+#             {"agent_id": agent_id,
+#              "use_local_critic": False,
+#              "obs_space_dict": obs_space,
+#              "act_space_dict": act_space},)
+#         for agent_id, agent_name in enumerate(agent_names)}
+#     return policies
+
+#     return (
+
+#         None, obs_space, act_space,
+#         {
+
+#             "agent_id": i,
+
+#             "use_local_critic": False,
+
+#             "obs_space_dict": dict(zip(self.agent_ids, obs_space)),
+
+#             "act_space_dict":  dict(zip(self.agent_ids, act_space)),
+
+#         }
+
+#     )
 
 
 if __name__ == '__main__':
@@ -100,6 +116,8 @@ if __name__ == '__main__':
 
     policies = gen_policies(obs_space, act_space,
                             num_agents=args.num_agents)
+
+    print(policies)
 
     if args.run.upper() == "PPO":
         tune.run(

@@ -13,7 +13,6 @@ from utils import get_trainers, mlp_model
 
 def rollout(env, arglist, coalition=None, missing_agents_bahaviour="random_player"):
     tf.reset_default_graph()
-    # tf.initialize_all_variables()
     with U.single_threaded_session():
         # Create agent trainers
         obs_shape_n = [env.observation_space[i].shape for i in range(env.n)]
@@ -25,56 +24,54 @@ def rollout(env, arglist, coalition=None, missing_agents_bahaviour="random_playe
         U.initialize()
         U.load_state(arglist.load_dir)
 
-        episode_rewards = [0.0]  # sum of rewards for all agents
-        agent_rewards = [[0.0]
-                         for _ in range(env.n)]  # individual agent reward
-        agent_info = [[[]]]  # placeholder for benchmarking info
         obs_n = env.reset()
         episode_step = 0
-        train_step = 0
+        rollout_step = 0
         goal_agents = []
+        goal_agents, total_agent_rewards, total_episode_rewards = [], [], []
 
         for episode in range(arglist.num_episodes):
-            # get action
-            action_n = take_actions_for_coalition(
-                trainers, obs_n, coalition, env, missing_agents_bahaviour)
+            rewards, agent_rewards = [], []
+            while True:
+                # get action
+                action_n = take_actions_for_coalition(
+                    trainers, obs_n, coalition, env, missing_agents_bahaviour)
 
-            # environment step
-            obs_n, rew_n, done_n, info_n = env.step(action_n)
-            episode_step += 1
-            done = all(done_n)
-            terminal = (episode_step >= arglist.max_episode_len)
+                # environment step
+                obs_n, rew_n, done_n, info_n = env.step(action_n)
 
-            for i, rew in enumerate(rew_n):
-                episode_rewards[-1] += rew
-                agent_rewards[i][-1] += rew
+                episode_step += 1
+                done = all(done_n)
+                terminal = (episode_step >= arglist.max_episode_len)
 
-            if done or terminal:
-                obs_n = env.reset()
-                episode_step = 0
-                episode_rewards.append(0)
-                for a in agent_rewards:
-                    a.append(0)
-                agent_info.append([[]])
-                goal_agents.append(env.winning_agent().name)
-                break
+                # increment global step counter
+                rollout_step += 1
 
-            # increment global step counter
-            train_step += 1
+                # for displaying
+                if arglist.display:
+                    time.sleep(0.1)
+                    env.render()
+                    continue
 
-            # for displaying
-            if arglist.display:
-                time.sleep(0.1)
-                env.render()
-                continue
+                # update all trainers, if not in display or benchmark mode
+                for agent in trainers:
+                    agent.preupdate()
+                for agent in trainers:
+                    agent.update(trainers, rollout_step)
 
-            # update all trainers, if not in display or benchmark mode
-            for agent in trainers:
-                agent.preupdate()
-            for agent in trainers:
-                agent.update(trainers, train_step)
+                agent_rewards.append(rew_n)
+                rewards.append(sum(rew_n[:-num_adversaries]))
+                if done or terminal:
+                    obs_n = env.reset()
+                    episode_step = 0
+                    total_agent_rewards.append(agent_rewards)
+                    total_episode_rewards.append(rewards)
+                    goal_agents.append(env.winning_agent().name)
+                    break
 
-    return episode_rewards, goal_agents
+    rollout_info = {"goal_agents": goal_agents,
+                    "episode_rewards": total_episode_rewards, "agent_rewards": total_agent_rewards}
+    return rollout_info
 
 
 def take_action(trainers, obs_n):
@@ -107,3 +104,13 @@ def take_actions_for_coalition(trainers, obs_n, coalition, env, missing_agents_b
             actions_for_coalition[agent_id] = actions[agent_id]
 
     return actions_for_coalition
+
+
+def save_reward(arglist, feature, m, marginal_contribution):
+    'Keep track of marginal contributions in csv file while computing shapley values'
+    file_name = f"{arglist.save_dir}/{arglist.exp_name}.csv"
+
+    with open(file_name, "a", newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=",")
+        writer.writerow(
+            [feature, m, arglist.missing_agent_behaviour, marginal_contribution])

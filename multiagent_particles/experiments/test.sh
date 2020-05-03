@@ -1,1 +1,1 @@
-python run.py --scenario "simple_tag"  --good-policy "ddpg" --num-adversaries 3 --load-dir "saves/run_x/model" --shapley-M 1 --mising-agent-behaviour "random_player" #--display
+python run.py --load-dir "saves/run_11/episode_200000/model"--missing-agents-behaviour "random_player" --exp-name test --save-dir marginal_contributions --shapley-M 5 --num-episodes 1 
