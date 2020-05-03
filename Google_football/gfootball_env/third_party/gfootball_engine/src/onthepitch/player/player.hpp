@@ -92,8 +92,8 @@ class Player : public PlayerBase {
     void SetNumberFramesHoldingBall(int n) { numberFramesHoldingBall = n; }
     inline int GetNumberGoals() const { return numberGoals; }
     void SetNumberGoals(int n) { numberGoals = n; }
-    inline int GetNumberSuccessiveDefenses() const { return numberSuccessiveDefenses; }
-    void SetNumberSuccessiveDefenses(int n) { numberSuccessiveDefenses = n; }  
+    inline int GetNumberSuccessfulDefenses() const { return numberSuccessfulDefenses; }
+    void SetNumberSuccessfulDefenses(int n) { numberSuccessfulDefenses = n; }  
 
     void TriggerControlledBallCollision() { DO_VALIDATION; triggerControlledBallCollision = true; }
     bool IsControlledBallCollisionTriggered() { DO_VALIDATION; return triggerControlledBallCollision; }
@@ -162,7 +162,7 @@ class Player : public PlayerBase {
     unsigned int numberPasses = 0;
     unsigned int numberFramesHoldingBall = 0;
     unsigned int numberGoals = 0;
-    unsigned int numberSuccessiveDefenses = 0;  
+    unsigned int numberSuccessfulDefenses = 0;  
 
     unsigned long cardEffectiveTime_ms = 0;
 

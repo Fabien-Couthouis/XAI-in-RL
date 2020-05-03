@@ -247,7 +247,7 @@ struct PlayerInfo {
     number_passes = f.number_passes;
     number_frames_holding_ball = f.number_frames_holding_ball;
     distance_to_goal = f.distance_to_goal;
-    number_successive_defenses = f.number_successive_defenses;
+    number_successful_defense = f.number_successful_defense;
     number_goals = f.number_goals;
     tired_factor = f.tired_factor;
     role = f.role;
@@ -262,7 +262,7 @@ struct PlayerInfo {
         distance_to_goal == f.distance_to_goal &&
         number_goals == f.number_goals &&
         number_frames_holding_ball == f.number_frames_holding_ball &&
-        number_successive_defenses == f.number_successive_defenses &&
+        number_successful_defense == f.number_successful_defense &&
         role == f.role;
   }
   Position player_position;
@@ -273,7 +273,7 @@ struct PlayerInfo {
   int number_passes = 0;
   int number_frames_holding_ball = 0;
   int number_goals = 0;
-  int number_successive_defenses = 0;
+  int number_successful_defense = 0;
   float tired_factor = 0.0f; // In the [0..1] range.
   e_PlayerRole role = e_PlayerRole_GK;
 };
