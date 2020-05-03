@@ -91,9 +91,10 @@ class Match {
     void SetGoalScored(bool onOff) { DO_VALIDATION; if (onOff == false) ballIsInGoal = false; goalScored = onOff; }
     bool IsGoalScored() const { return goalScored; }
     Team* GetLastGoalTeam() const { return lastGoalTeam; }
-    void SetLastTouchTeamID(int id, e_TouchType touchType = e_TouchType_Intentional_Kicked) { DO_VALIDATION; lastTouchTeamIDs[touchType] = id; lastTouchTeamID = id; referee->BallTouched(); }
+    void SetLastTouchTeamID(int id, e_TouchType touchType = e_TouchType_Intentional_Kicked) { DO_VALIDATION; lastTouchTeamIDs[touchType] = id; previousTouchTeamID = lastTouchTeamID; lastTouchTeamID = id; referee->BallTouched(); }
     int GetLastTouchTeamID(e_TouchType touchType) const { return lastTouchTeamIDs[touchType]; }
     int GetLastTouchTeamID() const { return lastTouchTeamID; }
+    int GetPreviousTouchTeamID() const { return previousTouchTeamID; }
     Team *GetLastTouchTeam() { DO_VALIDATION;
       if (lastTouchTeamID != -1)
         return teams[lastTouchTeamID];
@@ -206,6 +207,7 @@ class Match {
     Player *lastGoalScorer;
     int lastTouchTeamIDs[e_TouchType_SIZE];
     int lastTouchTeamID = 0;
+    int previousTouchTeamID = -1;
     Team* bestPossessionTeam = 0;
     Player *designatedPossessionPlayer;
     Player *ballRetainer;

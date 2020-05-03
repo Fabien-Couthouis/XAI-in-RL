@@ -100,6 +100,10 @@ def flip_team_observation(observation, result, config, from_team, to_team):
       '{}_team_number_frames_holding_ball'.format(from_team)]
   result['{}_team_number_goals'.format(to_team)] = observation[
       '{}_team_number_goals'.format(from_team)]
+  result['{}_team_distance_to_goal'.format(to_team)] = observation[
+      '{}_team_distance_to_goal'.format(from_team)]
+  result['{}_team_number_successive_defense'.format(to_team)] = observation[
+      '{}_team_number_successive_defense'.format(from_team)]
   result['{}_team_roles'.format(to_team)] = observation['{}_team_roles'.format(
       from_team)]
   result['{}_team_active'.format(to_team)] = observation[
