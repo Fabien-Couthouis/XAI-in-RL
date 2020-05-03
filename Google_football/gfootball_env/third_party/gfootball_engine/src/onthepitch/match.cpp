@@ -795,7 +795,7 @@ void Match::GetTeamState(SharedInfo *state,
       info.is_active = player->IsActive();
       info.role = player->GetFormationEntry().role;
       info.distance_to_goal = player->GetTacticalSituation().forwardRating;
-      if (GetPreviousBallRetainer()->GetTeamID() != player->GetTeamID() && player->CastHumanoid()->GetCurrentFunctionType() == e_FunctionType_LongPass) {
+      if (GetPreviousBallRetainer()->GetTeamID() != player->GetTeamID() && player->GetCurrentFunctionType() == e_FunctionType_LongPass) {
         info.number_successive_defenses = 1 + player->GetNumberSuccessiveDefenses();
         player->SetNumberSuccessiveDefenses(info.number_successive_defenses);
       }
