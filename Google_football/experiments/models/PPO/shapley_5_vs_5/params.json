@@ -1,0 +1,68 @@
+{
+  "batch_mode": "truncate_episodes",
+  "clip_rewards": false,
+  "entropy_coeff": 0.01,
+  "env": "g_football",
+  "kl_coeff": 0.2,
+  "lambda": 0.95,
+  "log_level": "WARN",
+  "lr": 0.0005,
+  "multiagent": {
+    "policies": {
+      "policy_agent_0": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {
+          "agent_id": 0
+        }
+      ],
+      "policy_agent_1": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {
+          "agent_id": 1
+        }
+      ],
+      "policy_agent_2": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {
+          "agent_id": 2
+        }
+      ],
+      "policy_agent_3": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {
+          "agent_id": 3
+        }
+      ],
+      "policy_agent_4": [
+        null,
+        "Box(42, 42, 4)",
+        "Discrete(19)",
+        {
+          "agent_id": 4
+        }
+      ]
+    },
+    "policy_mapping_fn": "<function policy_agent_mapping at 0x7f98c9d647b8>"
+  },
+  "num_cpus_per_worker": 1,
+  "num_envs_per_worker": 1,
+  "num_gpus": 1,
+  "num_sgd_iter": 10,
+  "num_workers": 3,
+  "observation_filter": "NoFilter",
+  "rollout_fragment_length": 50,
+  "sgd_minibatch_size": 250,
+  "simple_optimizer": false,
+  "train_batch_size": 250,
+  "use_pytorch": false,
+  "vf_clip_param": 10.0,
+  "vf_share_layers": true
+}
