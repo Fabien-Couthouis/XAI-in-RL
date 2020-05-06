@@ -22,7 +22,7 @@ from ray.tune.registry import register_env
 from experiments.RllibGFootball import RllibGFootball
 from experiments.rollout import *
 from experiments.shapley_values import monte_carlo_shapley_values, exact_shapley_values
-from experiments.plot import plot_shap_barchart, plot_shap_piechart
+#from experiments.plot import plot_shap_barchart, plot_shap_piechart
 
 
 EXAMPLE_USAGE = """
