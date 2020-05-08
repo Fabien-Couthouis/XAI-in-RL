@@ -1,5 +1,7 @@
 import pickle
 import os
+import json
+import six.moves.cPickle
 """
 # Special action set that includes all the core actions in the same order.
 full_action_set = [
@@ -76,15 +78,20 @@ def get_steps_per_player(file_path, team="left"):
 
 
 def get_dumps(file_path):
+    dumps = []
     with open("replays/"+file_path, 'rb') as file:
-        dumps = pickle.load(file)
+        while True:
+            try:
+                step = six.moves.cPickle.load(file)
+            except EOFError:
+                return dumps
+            dumps.append(step)
     return dumps
 
 
 def show_one(file_path, show_all=False):
     dumps = get_dumps(file_path)
-    print(dumps)
-
+    
     if show_all:
         print(dumps)
     else:
@@ -105,6 +112,8 @@ def show_one(file_path, show_all=False):
                           "player", obs['ball_owned_player'], "\n")
 
 
-show_one("episode_done_20200418-141133054416.dump", True)
+if __name__ == "__main__":
+    show_one("episode_done_20200506-182055057278.dump", True)
+
 # scorers = get_scorers("score_20200206-174813545665.dump")
 # print(scorers)
