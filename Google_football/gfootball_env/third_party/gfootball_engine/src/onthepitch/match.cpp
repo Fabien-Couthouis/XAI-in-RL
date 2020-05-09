@@ -795,23 +795,27 @@ void Match::GetTeamState(SharedInfo *state,
       info.is_active = player->IsActive();
       info.role = player->GetFormationEntry().role;
       info.distance_to_goal = player->GetTacticalSituation().forwardRating;
+      info.number_frames_holding_ball = player->GetNumberFramesHoldingBall();
+      info.number_successful_defense = player->GetNumberSuccessfulDefenses();
+      info.number_passes = player->GetNumberPasses();
+      info.number_goals = player->GetNumberGoals();
       if (GetPreviousTouchTeamID() != -1 && GetPreviousTouchTeamID() != player->GetTeamID() && player->GetCurrentFunctionType() == e_FunctionType_LongPass) {
-        info.number_successful_defense = 1 + player->GetNumberSuccessfulDefenses();
+        info.number_successful_defense++;
         player->SetNumberSuccessfulDefenses(info.number_successful_defense);
       }
       if (IsBallInGoal() && GetLastGoalTeam()->GetLastTouchPlayer() == player) 
       {
-        info.number_goals = 1 + player->GetNumberGoals();
+        info.number_goals++;
         player->SetNumberGoals(info.number_goals);
       }
       if (player->HasPossession() && GetLastTouchTeamID() != -1 &&
           GetLastTouchTeam()->GetLastTouchPlayer() == player) {
         DO_VALIDATION;
         if (state->ball_owned_player != team.size()) {
-          info.number_passes = 1 + player->GetNumberPasses();
+          info.number_passes++;
           player->SetNumberPasses(info.number_passes);
         }
-        info.number_frames_holding_ball = 1 + player->GetNumberFramesHoldingBall();
+        info.number_frames_holding_ball++;
         player->SetNumberFramesHoldingBall(info.number_frames_holding_ball); 
         state->ball_owned_player = team.size();
         state->ball_owned_team = GetLastTouchTeamID();
