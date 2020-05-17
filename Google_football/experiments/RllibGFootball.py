@@ -46,7 +46,7 @@ class RllibGFootball(MultiAgentEnv):
         if self.actions_are_logits:
             # Handle MADDPG case
             action_dict = {
-                k: np.random.choice([0, 1], p=v)
+                k: np.random.choice(np.arange(len(v)), p=v)
                 for k, v in action_dict.items()
             }
 
