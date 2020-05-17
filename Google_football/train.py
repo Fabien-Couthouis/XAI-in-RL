@@ -305,92 +305,92 @@ if __name__ == '__main__':
                 },
             }
         )
-    # elif args.run.upper() == "MADDPG":
+    elif args.run.upper() == "MADDPG":
 
-    #     tune.run(
-    #         'contrib/MADDPG',
-    #         stop={'training_iteration': args.num_iters},
-    #         checkpoint_freq=args.checkpoint_freq,
-    #         resume=args.resume,
-    #         config={
-    #             # === MADDPG SPECIFIC CONFIG ===
-    #             # === Settings for each individual policy ===
-    #             # ID of the agent controlled by this policy
-    #             # "agent_id": None,
-    #             # # Use a local critic for this policy.
-    #             # "use_local_critic": False,
+        tune.run(
+            'contrib/MADDPG',
+            stop={'training_iteration': args.num_iters},
+            checkpoint_freq=args.checkpoint_freq,
+            resume=args.resume,
+            config={
+                # === MADDPG SPECIFIC CONFIG ===
+                # === Settings for each individual policy ===
+                # ID of the agent controlled by this policy
+                # "agent_id": None,
+                # # Use a local critic for this policy.
+                # "use_local_critic": False,
 
-    #             # # # === Evaluation ===
-    #             # # # Evaluation interval
-    #             # # "evaluation_interval": None,
-    #             # # Number of episodes to run per evaluation period.
-    #             # "evaluation_num_episodes": 10,
+                # # # === Evaluation ===
+                # # # Evaluation interval
+                # # "evaluation_interval": None,
+                # # Number of episodes to run per evaluation period.
+                # "evaluation_num_episodes": 10,
 
-    #             # === Model ===
-    #             # Apply a state preprocessor with spec given by the "model" config option
-    #             # (like other RL algorithms). This is mostly useful if you have a weird
-    #             # observation shape, like an image. Disabled by default.
-    #             "use_state_preprocessor": False,
-    #             # Postprocess the policy network model output with these hidden layers. If
-    #             # use_state_preprocessor is False, then these will be the *only* hidden
-    #             # layers in the network.
-    #             "actor_hiddens": [64, 64],
-    #             # Hidden layers activation of the postprocessing stage of the policy
-    #             # network
-    #             "actor_hidden_activation": "relu",
-    #             # Postprocess the critic network model output with these hidden layers;
-    #             # again, if use_state_preprocessor is True, then the state will be
-    #             # preprocessed by the model specified with the "model" config option first.
-    #             "critic_hiddens": [64, 64],
-    #             # Hidden layers activation of the postprocessing state of the critic.
-    #             "critic_hidden_activation": "relu",
-    #             # N-step Q learning
-    #             "n_step": 1,
+                # === Model ===
+                # Apply a state preprocessor with spec given by the "model" config option
+                # (like other RL algorithms). This is mostly useful if you have a weird
+                # observation shape, like an image. Disabled by default.
+                "use_state_preprocessor": True,
+                # Postprocess the policy network model output with these hidden layers. If
+                # use_state_preprocessor is False, then these will be the *only* hidden
+                # layers in the network.
+                "actor_hiddens": [64, 64],
+                # Hidden layers activation of the postprocessing stage of the policy
+                # network
+                "actor_hidden_activation": "relu",
+                # Postprocess the critic network model output with these hidden layers;
+                # again, if use_state_preprocessor is True, then the state will be
+                # preprocessed by the model specified with the "model" config option first.
+                "critic_hiddens": [64, 64],
+                # Hidden layers activation of the postprocessing state of the critic.
+                "critic_hidden_activation": "relu",
+                # N-step Q learning
+                "n_step": 1,
 
-    #             # Size of the replay buffer. Note that if async_updates is set, then
-    #             # each worker will have a replay buffer of this size.
-    #             "buffer_size": int(1e6),
-    #             # Observation compression. Note that compression makes simulation slow in
-    #             # MPE.
-    #             # "compress_observations": False,
+                # Size of the replay buffer. Note that if async_updates is set, then
+                # each worker will have a replay buffer of this size.
+                "buffer_size": int(1e6),
+                # Observation compression. Note that compression makes simulation slow in
+                # MPE.
+                # "compress_observations": False,
 
-    #             # === Optimization ===
-    #             # Learning rate for the critic (Q-function) optimizer.
-    #             "critic_lr": 1e-2,
-    #             # Learning rate for the actor (policy) optimizer.
-    #             "actor_lr": 1e-2,
-    #             # Update the target network every `target_network_update_freq` steps.
-    #             "target_network_update_freq": 0,
-    #             # Update the target by \tau * policy + (1-\tau) * target_policy
-    #             "tau": 0.01,
-    #             # Weights for feature regularization for the actor
-    #             "actor_feature_reg": 0.001,
-    #             # If not None, clip gradients during optimization at this value
-    #             "grad_norm_clipping": 0.5,
-    #             # How many steps of the model to sample before learning starts.
-    #             "learning_starts": 1024 * 25,
-    #             # Number of env steps to optimize for before returning
-    #             "timesteps_per_iteration": 0,
+                # === Optimization ===
+                # Learning rate for the critic (Q-function) optimizer.
+                "critic_lr": 1e-2,
+                # Learning rate for the actor (policy) optimizer.
+                "actor_lr": 1e-2,
+                # Update the target network every `target_network_update_freq` steps.
+                "target_network_update_freq": 0,
+                # Update the target by \tau * policy + (1-\tau) * target_policy
+                "tau": 0.01,
+                # Weights for feature regularization for the actor
+                "actor_feature_reg": 0.001,
+                # If not None, clip gradients during optimization at this value
+                "grad_norm_clipping": 0.5,
+                # How many steps of the model to sample before learning starts.
+                "learning_starts": 1024 * 25,
+                # Number of env steps to optimize for before returning
+                "timesteps_per_iteration": 0,
 
-    #             # === Parallelism ===
-    #             # Prevent iterations from going lower than this time span
-    #             "min_iter_time_s": 0,
-    #             # === COMMON CONFIG ===
-    #             'env': 'g_football',
-    #             'num_workers': 3,
-    #             'num_envs_per_worker': 1,
-    #             'num_cpus_per_worker': 1,
-    #             'num_gpus': args.num_gpus,
-    #             'rollout_fragment_length': 100,
-    #             "train_batch_size": 1024,
-    #             'batch_mode': 'truncate_episodes',
-    #             'log_level': 'DEBUG',
-    #             'multiagent': {
-    #                 'policies': policies,
-    #                 'policy_mapping_fn': policy_agent_mapping,
-    #             },
-    #         }
-    #     )
+                # === Parallelism ===
+                # Prevent iterations from going lower than this time span
+                "min_iter_time_s": 0,
+                # === COMMON CONFIG ===
+                'env': 'g_football',
+                'num_workers': 3,
+                'num_envs_per_worker': 1,
+                'num_cpus_per_worker': 1,
+                'num_gpus': args.num_gpus,
+                'rollout_fragment_length': 100,
+                "train_batch_size": 1024,
+                'batch_mode': 'truncate_episodes',
+                'log_level': 'DEBUG',
+                'multiagent': {
+                    'policies': policies,
+                    'policy_mapping_fn': policy_agent_mapping,
+                },
+            }
+        )
 
     else:
         raise ValueError(
