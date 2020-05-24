@@ -104,7 +104,7 @@ dependencies:
     - pyglet==1.5.0
     - pyrsistent==0.16.0
     - pyyaml==5.3.1
-    - ray==0.8.4
+    - ray==0.8.5
     - redis==3.4.1
     - soupsieve==2.0
     - tensorboardx==2.0

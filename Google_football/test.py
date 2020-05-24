@@ -208,10 +208,15 @@ def run(args, parser):
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
+
+    # MADDPG emits action logits instead of actual discrete actions
+    actions_are_logits = ( "MADDPG" in args.run.upper())
+
     # Register custom envs
     register_env("gfootball", lambda _: RllibGFootball(num_agents=args.num_agents,
                                                        env_name=args.scenario_name,
                                                        render=(
                                                            not args.no_render),
+                                                       actions_are_logits=actions_are_logits,
                                                        save_replays=args.save_replays))
     run(args, parser)

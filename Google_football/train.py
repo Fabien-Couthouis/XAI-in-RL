@@ -15,10 +15,6 @@ from ray.tune.registry import register_env
 from ray.rllib.utils.framework import try_import_tf
 from ray.tune.config_parser import make_parser
 from experiments.RllibGFootball import RllibGFootball, policy_agent_mapping
-from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
-from ray.rllib.agents.impala.vtrace_policy import VTraceTFPolicy
-from ray.rllib.agents.sac.sac_policy import SACTFPolicy
-from ray.rllib.contrib.maddpg.maddpg_policy import MADDPGTFPolicy
 
 # Try to import both backends for flag checking/warnings.
 tf = try_import_tf()

@@ -17,7 +17,7 @@ import ray
 from ray.rllib.agents.registry import get_agent_class
 from ray.rllib.env import MultiAgentEnv
 from ray.rllib.env.base_env import _DUMMY_AGENT_ID
-from ray.rllib.evaluation.episode import _flatten_action
+from ray.rllib.utils.space_utils import flatten_to_single_ndarray
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 
 
@@ -193,7 +193,7 @@ def rollout(agent,
         state_init = {p: m.get_initial_state() for p, m in policy_map.items()}
         use_lstm = {p: len(s) > 0 for p, s in state_init.items()}
         action_init = {
-            p: _flatten_action(m.action_space.sample())
+            p: flatten_to_single_ndarray(m.action_space.sample())
             for p, m in policy_map.items()
         }
     else:
@@ -289,7 +289,7 @@ def take_action(agent, multi_obs, mapping_cache, use_lstm, agent_states, prev_ac
                     prev_action=prev_actions[agent_id],
                     prev_reward=prev_rewards[agent_id],
                     policy_id=policy_id)
-            a_action = _flatten_action(a_action)  # tuple actions
+            a_action = flatten_to_single_ndarray(a_action)  # tuple actions
             action_dict[agent_id] = a_action
             prev_actions[agent_id] = a_action
     return action_dict
