@@ -1,0 +1,1 @@
+player,episode,method,goal_agents_with,total_good_agents_rewards_with,good_agents_rewards_with,goal_agents_without,total_good_agents_rewards_without,good_agents_rewards_without

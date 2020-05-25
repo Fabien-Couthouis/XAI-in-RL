@@ -1,1 +1,1 @@
-python run.py --load-dir "saves/run_11/episode_200000/model"--missing-agents-behaviour "random_player" --exp-name test --save-dir marginal_contributions --shapley-M 5 --num-episodes 1 
+python run.py --load-dir "saves/run_11/episode_200000/model" --missing-agents-behaviour "idle" --exp-name test --save-dir marginal_contributions --shapley-M 5 --num-episodes 1 

@@ -4,58 +4,64 @@ import csv
 from itertools import combinations, permutations
 from statistics import mean
 from math import factorial
+import maddpg.common.tf_util as U
+from utils import get_trainers, mlp_model
+
 from rollout import rollout
 
 DEBUG = False  # print debugging info if set to true
 GAMMA_LIST = [1, 0.99, 0.95, 0.9]  # discount factors
 
 
-def get_combinations(features):
+def get_combinations(players):
     'Get all possible coalitions between features'
     combinations_list = []
-    for i in range(1, len(features)+1):
-        oc = combinations(features, i)
+    for i in range(1, len(players)+1):
+        oc = combinations(players, i)
         for c in oc:
             combinations_list.append(list(c))
+
     return combinations_list
 
 
-def get_combinations_for_feature(features, feature_id):
-    combinations = get_combinations(features)
+def get_combinations_for_player(players, player):
+    combinations = get_combinations(players)
     with_player = []
-    for feature in combinations:
-        if feature_id in feature:
-            with_player.append(feature)
-
+    for combination in combinations:
+        if player in combination:
+            with_player.append(combination)
     return with_player
 
 
-def monte_carlo_shapley_estimation(env, arglist, M):
+def monte_carlo_shapley_estimation(env, arglist, trainers):
     estimated_values = []
     num_good = min(env.n, env.n-arglist.num_adversaries)
-    features = range(num_good)
-    for feature in features:
-        print("Feature: ", feature, "/", num_good-1)
-        coalitions_with_player = get_combinations_for_feature(
-            features, feature)
-        marginal_contributions = []
-        for m in range(1, 1+M):
-            print("m=", m, "/", M)
-            coalition_with_player = random.choice(coalitions_with_player)
-            coalition_without_player = coalition_with_player.copy().remove(feature)
-            rollout_info_with = rollout(env,
-                                        arglist, coalition_with_player, arglist.missing_agents_behaviour)
-            rollout_info_without = rollout(env,
-                                           arglist, coalition_without_player, arglist.missing_agents_behaviour)
+    players = range(num_good)
 
-            values_with_player = np.mean(
-                rollout_info_with["episode_rewards"])
-            values_without_player = np.mean(
-                rollout_info_without["episode_rewards"])
+    for considered_player in players:
+        print("Player: ", considered_player, "/", num_good-1)
+        combinations_with_player = get_combinations_for_player(
+            players, considered_player)
+        marginal_contributions = []
+        for m in range(1, 1+arglist.shapley_M):
+            if m % (arglist.shapley_M*0.1) == 0:
+                print("m=", m, "/", arglist.shapley_M)
+            coalition_with_player = random.choice(combinations_with_player)
+            coalition_without_player = [
+                player for player in coalition_with_player if player != considered_player]
+            rollout_info_with = rollout(env,
+                                        arglist, trainers, considered_player, coalition_with_player, arglist.missing_agents_behaviour)
+            rollout_info_without = rollout(env,
+                                           arglist, trainers, considered_player, coalition_without_player, arglist.missing_agents_behaviour)
+
+            values_with_player = np.sum(
+                rollout_info_with["episode_rewards"], axis=-1)
+            values_without_player = np.sum(
+                rollout_info_without["episode_rewards"], axis=-1)
             # print(values_with_player)
             marginal_contribution = values_with_player - values_without_player
             marginal_contributions.append(marginal_contribution)
-            save_rollout_info(arglist, feature, m,
+            save_rollout_info(arglist, considered_player, m,
                               rollout_info_with, rollout_info_without)
 
         # TODO: normalization (minmax?)
@@ -72,29 +78,22 @@ def monte_carlo_shapley_estimation(env, arglist, M):
 def save_rollout_info(arglist, feature, m, rollout_info_with, rollout_info_without):
     'Keep track of marginal contributions in csv file while computing shapley values'
     file_name = f"{arglist.save_dir}/{arglist.exp_name}.csv"
-    rewards_with = np.mean(rollout_info_with["episode_rewards"], axis=0)
-    discounted_rewards_with = []
-    rewards_without = np.mean(rollout_info_without["episode_rewards"], axis=0)
-    discounted_rewards_without = []
-    for gamma in GAMMA_LIST:
-        discounted_rewards_with.append(
-            np.mean(discount_rewards(rewards_with, gamma)))
-        discounted_rewards_without.append(np.mean(
-            discount_rewards(rewards_without, gamma)))
+    # rewards_with = np.mean(rollout_info_with["episode_rewards"], axis=0)
+    # discounted_rewards_with = []
+    # rewards_without = np.mean(rollout_info_without["episode_rewards"], axis=0)
+    # discounted_rewards_without = []
+    # for gamma in GAMMA_LIST:
+    #     discounted_rewards_with.append(
+    #         np.mean(discount_rewards(rewards_with, gamma)))
+    #     discounted_rewards_without.append(np.mean(
+    #         discount_rewards(rewards_without, gamma)))
     with open(file_name, "a", newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow(
-            [feature, m, arglist.missing_agents_behaviour] + [reward for reward in discounted_rewards_with] + [reward for reward in discounted_rewards_without])
+        row = [feature, m, arglist.missing_agents_behaviour]
+        row.extend(rollout_info_with.values())
+        row.extend(rollout_info_without.values())
+        writer.writerow(row)
 
-
-def discount_rewards(rewards, gamma):
-    'Returns rewards discounted by GAMMA factor'
-    discounted_rewards = np.zeros_like(rewards)
-    R = 0
-    for t in reversed(range(0, len(rewards))):
-        R = R * gamma + rewards[t]
-        discounted_rewards[t] = R
-    return discounted_rewards
 
 # def get_marginal_contributions(env, features, num_episodes, behaviour_nets):
 #     'Get mean reward for each agent for each coalitions '
