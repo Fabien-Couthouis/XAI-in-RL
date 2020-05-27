@@ -14,7 +14,7 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.tune.registry import register_env
 from ray.rllib.utils.framework import try_import_tf
 from ray.tune.config_parser import make_parser
-from experiments.RllibGFootball import RllibGFootball, policy_agent_mapping
+from experiments.RllibGFootball import RllibGFootball
 
 # Try to import both backends for flag checking/warnings.
 tf = try_import_tf()
@@ -58,38 +58,9 @@ def gen_policies(obs_space, act_space, num_agents):
                 for agent_id, agent_name in enumerate(agent_names)}
     return policies
 
-
-# def gen_policies_maddpg(obs_space, act_space, num_agents):
-
-#     policy = (None, obs_space, act_space,)
-#     agent_names = [f"agent_{agent_id}" for agent_id in range(num_agents)]
-
-#     policies = {
-#         policy_agent_mapping(agent_name): policy + (
-#             {"agent_id": agent_id,
-#              "use_local_critic": False,
-#              "obs_space_dict": obs_space,
-#              "act_space_dict": act_space},)
-#         for agent_id, agent_name in enumerate(agent_names)}
-#     return policies
-
-#     return (
-
-#         None, obs_space, act_space,
-#         {
-
-#             "agent_id": i,
-
-#             "use_local_critic": False,
-
-#             "obs_space_dict": dict(zip(self.agent_ids, obs_space)),
-
-#             "act_space_dict":  dict(zip(self.agent_ids, act_space)),
-
-#         }
-
-#     )
-
+def policy_agent_mapping(agent_name):
+    'Maps agent name to policy name'
+    return f"policy_{agent_name}"
 
 if __name__ == '__main__':
     parser = create_parser()

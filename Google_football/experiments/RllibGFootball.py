@@ -4,9 +4,6 @@ import numpy as np
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 
-def policy_agent_mapping(agent_name):
-    'Maps agent name to policy name'
-    return f"policy_{agent_name}"
 
 
 class RllibGFootball(MultiAgentEnv):
