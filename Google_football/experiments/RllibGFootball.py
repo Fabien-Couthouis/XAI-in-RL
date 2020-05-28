@@ -28,9 +28,20 @@ class RllibGFootball(MultiAgentEnv):
 
     def close(self):
         self.env.close()
+    
+    def normalize_obs(self, obs):
+      for index1, ob in enumerate(obs):
+        for index2, o in enumerate(ob):
+          if o < -1:
+            ob[index2] = -1.0
+          if o > 1:
+            ob[index2] = 1.0
+        obs[index1] = ob
+      return obs
 
     def reset(self):
-        initial_obs = self.env.reset()
+        initial_obs = self.normalize_obs(self.env.reset())
+        print(f"Observations from env: {initial_obs}")
         obs = {}
         for x in range(self.num_agents):
             if self.num_agents > 1:
@@ -51,6 +62,7 @@ class RllibGFootball(MultiAgentEnv):
         for key, value in sorted(action_dict.items()):
             actions.append(value)
         o, r, d, i = self.env.step(actions)
+        o = self.normalize_obs(o)
         rewards, obs, infos = {}, {}, {}
         for pos, key in enumerate(sorted(action_dict.keys())):
             infos[key] = i
