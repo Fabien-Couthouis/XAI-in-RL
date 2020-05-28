@@ -41,7 +41,6 @@ class RllibGFootball(MultiAgentEnv):
 
     def reset(self):
         initial_obs = self.normalize_obs(self.env.reset())
-        print(f"Observations from env: {initial_obs}")
         obs = {}
         for x in range(self.num_agents):
             if self.num_agents > 1:
