@@ -9,6 +9,7 @@ AGENTS_COLORS = [[0.85, 0.35, 0.35], [0.25, 0.75, 0.95],
 
 class EnvWrapper(MultiAgentEnv):
     def __init__(self, scenario_name, benchmark=False):
+        self.scenario_name = scenario_name
         scenario = scenarios.load(scenario_name + ".py").Scenario()
         # create world
         world = scenario.make_world()
@@ -71,12 +72,22 @@ class EnvWrapper(MultiAgentEnv):
             dist_min = agent1.size + agent2.size
             return True if dist < dist_min else False
 
-        preys = [agent for agent in self.world.agents if not agent.adversary]
-        predators = self.agents
+        if self.scenario_name == "simple_tag":
 
-        for pred in predators:
-            if pred.collide:
-                for prey in preys:
-                    if is_collision(prey, pred):
-                        return(pred)
+            preys = [agent for agent in self.world.agents if not agent.adversary]
+            predators = self.agents
+
+            for pred in predators:
+                if pred.collide:
+                    for prey in preys:
+                        if is_collision(prey, pred):
+                            return pred
+        else:
+            adversary = [agent for agent in self.world.agents if agent.adversary][0]
+
+            if adversary.collide:
+                if is_collision(adversary, adversary.goal_a):
+                    return adversary
+
+
         return None  # episode not over
