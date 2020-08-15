@@ -19,9 +19,12 @@
 
 from . import *
 
+
 def build_scenario(builder):
+  builder.config().control_all_players = True
   builder.config().game_duration = 3000
-  builder.config().right_team_difficulty = 0.05
+  builder.config().right_team_difficulty = 1.0
+  builder.config().left_team_difficulty = 1.0
   builder.config().deterministic = False
   if builder.EpisodeNumber() % 2 == 0:
     first_team = Team.e_Left

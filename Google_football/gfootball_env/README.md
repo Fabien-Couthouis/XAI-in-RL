@@ -4,6 +4,7 @@ This repository contains an RL environment based on open-source game Gameplay
 Football. <br> It was created by the Google Brain team for research purposes.
 
 Useful links:
+
 * __(NEW!)__ [GRF Tournament](https://research-football.dev/tournament) - take part in the Tournament and become the new GRF Champion! Starting April 2020.
 * [GRF Game Server](https://research-football.dev/) - challenge other researchers!
 * [Run in Colab](https://colab.research.google.com/github/google-research/football/blob/master/gfootball/colabs/gfootball_example_from_prebuild.ipynb) - start training in less that 2 minutes.
@@ -27,10 +28,14 @@ Open our example [Colab](https://colab.research.google.com/github/google-researc
 
 This method doesn't support game rendering on screen - if you want to see the game running, please use the method below.
 
+### Using Docker
+
+This is the recommended way to avoid incompatible package versions.
+Instructions are available [here](gfootball/doc/docker.md).
+
 ### On your computer
 
 #### 1. Install required packages
-
 #### Linux
 ```
 sudo apt-get install git cmake build-essential libgl1-mesa-dev libsdl2-dev \
@@ -41,33 +46,43 @@ libdirectfb-dev libst-dev mesa-utils xvfb x11vnc libsdl-sge-dev python3-pip
 #### Mac OS X
 First install [brew](https://brew.sh/). It should automatically install Command Line Tools.
 Next install required packages:
+
 ```
-brew install git python3 cmake sdl2 sdl2_image sdl2_ttf sdl2_gfx boost
+brew install git python3 cmake sdl2 sdl2_image sdl2_ttf sdl2_gfx boost boost-python3
 ```
-and boost-python3, that supports Python 3.7:
+To set up `pygame`, it is also required to install older versions of SDL:
+
 ```
-brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/527d96f84d4632d30b281ef5b26717e0a75edcb4/Formula/boost-python3.rb
+brew install sdl sdl_image sdl_mixer sdl_ttf portmidi
 ```
 
-#### 2. Clone the game from GitHub master
+#### 2a. From PyPi package
+```
+pip3 install gfootball
+```
+
+#### 2b. Installing from sources using GitHub repository
+
 ```
 git clone https://github.com/google-research/football.git
 cd football
 ```
 
-#### Optional: Create and activate [virtual environment](https://docs.python.org/3/tutorial/venv.html)
+Optionally you can use [virtual environment](https://docs.python.org/3/tutorial/venv.html):
+
 ```
 python3 -m venv football-env
 source football-env/bin/activate
 ```
 
-#### 3. Install the game
+The last step is to build the environment:
+
 ```
 pip3 install .
 ```
 This command can run for a couple of minutes, as it compiles the C++ environment in the background.
 
-#### 4. Time to play!
+#### 3. Time to play!
 ```
 python3 -m gfootball.play_game --action_set=full
 ```
@@ -83,7 +98,7 @@ To quit the game press Ctrl+C in the terminal.
     * [Play vs pre-trained agent](#play-vs-pre-trained-agent)
     * [Trained checkpoints](#trained-checkpoints)
 * [Environment API](gfootball/doc/api.md)
-* [Observations](gfootball/doc/observation.md)
+* [Observations & Actions](gfootball/doc/observation.md)
 * [Scenarios](gfootball/doc/scenarios.md)
 * [Multi-agent support](gfootball/doc/multi_agent.md)
 * [Running in docker](gfootball/doc/docker.md)
@@ -94,11 +109,11 @@ To quit the game press Ctrl+C in the terminal.
 ### Run training
 In order to run TF training, install additional dependencies:
 
-- Update PIP, so that tensorflow 1.15 is available: `python3 -m pip install --upgrade pip`
-- TensorFlow: `pip3 install "tensorflow==1.15"` or
-  `pip3 install "tensorflow-gpu==1.15"`, depending on whether you want CPU or
+- Update PIP, so that tensorflow 1.15 is available: `python3 -m pip install --upgrade pip setuptools`
+- TensorFlow: `pip3 install tensorflow==1.15.*` or
+  `pip3 install tensorflow-gpu==1.15.*`, depending on whether you want CPU or
   GPU version;
-- Sonnet: `pip3 install "dm-sonnet<2.0.0"`;
+- Sonnet: `pip3 install dm-sonnet==1.*`;
 - OpenAI Baselines:
   `pip3 install git+https://github.com/openai/baselines.git@master`.
 

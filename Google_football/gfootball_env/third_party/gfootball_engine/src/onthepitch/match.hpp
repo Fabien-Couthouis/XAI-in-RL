@@ -52,7 +52,7 @@ struct PlayerBounce {
 class Match {
 
   public:
-    Match(MatchData *matchData, const std::vector<IHIDevice*> &controllers, bool init_animation);
+    Match(MatchData *matchData, const std::vector<AIControlledKeyboard*> &controllers, bool init_animation);
     virtual ~Match();
 
     void Exit();
@@ -65,7 +65,6 @@ class Match {
     int GetScore(int teamID) { DO_VALIDATION; return matchData->GetGoalCount(teamID); }
     Ball *GetBall() { DO_VALIDATION; return ball; }
     Team *GetTeam(int teamID) { DO_VALIDATION; return teams[teamID]; }
-    void GetAllTeamPlayers(int teamID, std::vector<Player*> &players);
     void GetActiveTeamPlayers(int teamID, std::vector<Player*> &players);
     void GetOfficialPlayers(std::vector<PlayerBase*> &players);
     boost::shared_ptr<AnimCollection> GetAnimCollection();
@@ -91,10 +90,9 @@ class Match {
     void SetGoalScored(bool onOff) { DO_VALIDATION; if (onOff == false) ballIsInGoal = false; goalScored = onOff; }
     bool IsGoalScored() const { return goalScored; }
     Team* GetLastGoalTeam() const { return lastGoalTeam; }
-    void SetLastTouchTeamID(int id, e_TouchType touchType = e_TouchType_Intentional_Kicked) { DO_VALIDATION; lastTouchTeamIDs[touchType] = id; previousTouchTeamID = lastTouchTeamID; lastTouchTeamID = id; referee->BallTouched(); }
+    void SetLastTouchTeamID(int id, e_TouchType touchType = e_TouchType_Intentional_Kicked) { DO_VALIDATION; lastTouchTeamIDs[touchType] = id; lastTouchTeamID = id; referee->BallTouched(); }
     int GetLastTouchTeamID(e_TouchType touchType) const { return lastTouchTeamIDs[touchType]; }
     int GetLastTouchTeamID() const { return lastTouchTeamID; }
-    int GetPreviousTouchTeamID() const { return previousTouchTeamID; }
     Team *GetLastTouchTeam() { DO_VALIDATION;
       if (lastTouchTeamID != -1)
         return teams[lastTouchTeamID];
@@ -127,7 +125,7 @@ class Match {
 
 
     boost::intrusive_ptr<Camera> GetCamera() { DO_VALIDATION; return camera; }
-    void GetTeamState(SharedInfo *state, std::map<IHIDevice*, int>& controller_mapping, int team_id);
+    void GetTeamState(SharedInfo *state, std::map<AIControlledKeyboard*, int>& controller_mapping, int team_id);
     void GetState(SharedInfo* state);
     void ProcessState(EnvState* state);
     bool Process();
@@ -184,7 +182,7 @@ class Match {
 
     boost::intrusive_ptr<Node> stadiumNode;
 
-    const std::vector<IHIDevice*> &controllers;
+    const std::vector<AIControlledKeyboard*> &controllers;
 
     Ball *ball = nullptr;
 
@@ -207,7 +205,6 @@ class Match {
     Player *lastGoalScorer;
     int lastTouchTeamIDs[e_TouchType_SIZE];
     int lastTouchTeamID = 0;
-    int previousTouchTeamID = -1;
     Team* bestPossessionTeam = 0;
     Player *designatedPossessionPlayer;
     Player *ballRetainer;

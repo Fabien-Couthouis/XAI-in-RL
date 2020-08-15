@@ -88,8 +88,16 @@ class FootballEnvCore(object):
     self._config.NewScenario(inc=inc)
     if self._env.state == GameState.game_created:
       self._env.start_game()
-    self._env.reset(self._config.ScenarioConfig(), animations)
     self._env.state = GameState.game_running
+    scenario_config = self._config.ScenarioConfig()
+    assert (
+        not scenario_config.dynamic_player_selection or
+        not scenario_config.control_all_players
+    ), ('For this scenario you need to control either 0 or all players on the '
+        'team ({} for left team, {} for right team).').format(
+            scenario_config.controllable_left_players,
+            scenario_config.controllable_right_players)
+    self._env.reset(scenario_config, animations)
 
   def reset(self, inc=1):
     """Reset environment for a new episode using a given config."""
@@ -319,12 +327,8 @@ class FootballEnvCore(object):
     active = []
     yellow_cards = []
     roles = []
-    number_passes = []
-    number_frames_holding_ball = []
-    number_goals = []
-    distance_to_goal = []
-    number_successful_defense = []
-    for player in players:
+    designated_player = -1
+    for id, player in enumerate(players):
       positions.append(player.position[0])
       positions.append(player.position[1])
       directions.append(player.direction[0])
@@ -333,11 +337,8 @@ class FootballEnvCore(object):
       active.append(player.is_active)
       yellow_cards.append(player.has_card)
       roles.append(player.role)
-      number_passes.append(player.number_passes)
-      number_frames_holding_ball.append(player.number_frames_holding_ball)
-      number_goals.append(player.number_goals)
-      distance_to_goal.append(player.distance_to_goal)
-      number_successful_defense.append(player.number_successful_defense)
+      if player.designated_player:
+        designated_player = id
     result[name] = np.reshape(np.array(positions), [-1, 2])
     # Players' movement direction represented as [x, y] distance per step.
     result['{}_direction'.format(name)] = np.reshape(
@@ -347,12 +348,7 @@ class FootballEnvCore(object):
     result['{}_active'.format(name)] = np.array(active)
     result['{}_yellow_card'.format(name)] = np.array(yellow_cards)
     result['{}_roles'.format(name)] = np.array(roles)
-    result['{}_number_passes'.format(name)] = np.array(number_passes)
-    result['{}_number_frames_holding_ball'.format(name)] = np.array(number_frames_holding_ball)
-    result['{}_number_goals'.format(name)] = np.array(number_goals)
-    result['{}_distance_to_goal'.format(name)] = np.array(distance_to_goal)
-    result['{}_number_successful_defense'.format(name)] = np.array(number_successful_defense)
-    
+    result['{}_designated_player'.format(name)] = designated_player
 
   def observation(self):
     """Returns the current observation of the game."""
@@ -421,8 +417,8 @@ class FootballEnvCore(object):
       self._retrieve_observation()
     if mode == 'rgb_array':
       frame = self._observation['frame']
-      b,g,r = cv2.split(frame)
-      return cv2.merge((r,g,b))
+      b, g, r = cv2.split(frame)
+      return cv2.merge((r, g, b))
     elif mode == 'human':
       return True
     return False
