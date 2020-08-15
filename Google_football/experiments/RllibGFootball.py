@@ -4,12 +4,10 @@ import numpy as np
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 
-
-
 class RllibGFootball(MultiAgentEnv):
     """An example of a wrapper for GFootball to make it compatible with rllib."""
 
-    def __init__(self, num_agents, env_name, render=True, save_replays=False, actions_are_logits=False):
+    def __init__(self, num_agents, env_name, render=True, save_replays=False, actions_are_logits=False, with_state=False):
         self.env = football_env.create_environment(
             env_name=env_name, stacked=False, representation='simple115v2',
             logdir='./replays', write_video=save_replays, rewards='scoring,checkpoints',
@@ -25,22 +23,23 @@ class RllibGFootball(MultiAgentEnv):
         self.num_agents = num_agents
         # MADDPG emits action logits instead of actual discrete actions
         self.actions_are_logits = actions_are_logits
+        self.with_state = with_state
 
     def close(self):
         self.env.close()
-    
-    def normalize_obs(self, obs):
-      for index1, ob in enumerate(obs):
-        for index2, o in enumerate(ob):
-          if o < -1:
-            ob[index2] = -1.0
-          if o > 1:
-            ob[index2] = 1.0
-        obs[index1] = ob
-      return obs
+
+    # def normalize_obs(self, obs):
+    #   for index1, ob in enumerate(obs):
+    #     for index2, o in enumerate(ob):
+    #       if o < -1:
+    #         ob[index2] = -1.0
+    #       if o > 1:
+    #         ob[index2] = 1.0
+    #     obs[index1] = ob
+    #   return obs
 
     def reset(self):
-        initial_obs = self.normalize_obs(self.env.reset())
+        initial_obs = self.env.reset()
         obs = {}
         for x in range(self.num_agents):
             if self.num_agents > 1:
@@ -61,13 +60,18 @@ class RllibGFootball(MultiAgentEnv):
         for key, value in sorted(action_dict.items()):
             actions.append(value)
         o, r, d, i = self.env.step(actions)
-        o = self.normalize_obs(o)
+        # o = self.normalize_obs(o)
         rewards, obs, infos = {}, {}, {}
         for pos, key in enumerate(sorted(action_dict.keys())):
             infos[key] = i
             if self.num_agents > 1:
                 rewards[key] = r[pos]
-                obs[key] = o[pos]
+
+                if self.with_state:
+                    obs[key] = {"obs": o[pos], "ENV_STATE": o[pos]}
+
+                else:
+                    obs[key] = o[pos]
             else:
                 rewards[key] = r
                 obs[key] = o

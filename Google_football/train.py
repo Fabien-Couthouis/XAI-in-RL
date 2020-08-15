@@ -1,20 +1,19 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
+from __future__ import absolute_import, division, print_function
 
 import argparse
-import gfootball.env as football_env
+
 import gym
-import ray
 import numpy as np
-from gym.spaces import Tuple, MultiDiscrete, Dict, Discrete, Box
+from gym.spaces import Box, Dict, Discrete, MultiDiscrete, Tuple
+
+import gfootball.env as football_env
+import ray
+from experiments.RllibGFootball import RllibGFootball
 from ray import tune
-from ray.rllib.env.multi_agent_env import MultiAgentEnv
-from ray.tune.registry import register_env
+from ray.rllib.env.multi_agent_env import ENV_STATE, MultiAgentEnv
 from ray.rllib.utils.framework import try_import_tf
 from ray.tune.config_parser import make_parser
-from experiments.RllibGFootball import RllibGFootball
+from ray.tune.registry import register_env
 
 # Try to import both backends for flag checking/warnings.
 tf = try_import_tf()
@@ -58,9 +57,11 @@ def gen_policies(obs_space, act_space, num_agents):
                 for agent_id, agent_name in enumerate(agent_names)}
     return policies
 
+
 def policy_agent_mapping(agent_name):
     'Maps agent name to policy name'
     return f"policy_{agent_name}"
+
 
 if __name__ == '__main__':
     parser = create_parser()
@@ -404,7 +405,127 @@ if __name__ == '__main__':
                 },
             }
         )
+    elif args.run == "QMIX":
+        grouping = {
+            "group_1": list(range(args.num_agents)),
+        }
+
+        obs_space_qmix = Tuple([
+            Dict({
+                "obs": obs_space,
+                ENV_STATE: obs_space
+            }) for _ in range(args.num_agents)
+        ])
+        act_space_qmix = Tuple([
+            act_space for _ in range(args.num_agents)
+        ])
+
+        # Create and register google football env
+
+        def create_env_qmix(_): return RllibGFootball(args.num_agents, args.scenario_name, render=False,
+                                                      actions_are_logits=actions_are_logits).with_agent_groups(grouping,
+                                                                                                               obs_space=obs_space_qmix,
+                                                                                                               act_space=act_space_qmix)
+
+        register_env('g_football_qmix', create_env_qmix)
+
+        tune.run(
+            'QMIX',
+            stop={'training_iteration': args.num_iters},
+            checkpoint_freq=args.checkpoint_freq,
+            resume=args.resume,
+            config={
+                # === QMix ===
+                # Mixing network. Either "qmix", "vdn", or None
+                "mixer": "qmix",
+                # Size of the mixing network embedding
+                "mixing_embed_dim": 32,
+                # Whether to use Double_Q learning
+                "double_q": True,
+                # Optimize over complete episodes by default.
+                "batch_mode": "complete_episodes",
+
+                # === Exploration Settings ===
+                "exploration_config": {
+                    # The Exploration class to use.
+                    "type": "EpsilonGreedy",
+                    # Config for the Exploration class' constructor:
+                    "initial_epsilon": 1.0,
+                    "final_epsilon": 0.02,
+                    # Timesteps over which to anneal epsilon.
+                    "epsilon_timesteps": 10000,
+
+                    # For soft_q, use:
+                    # "exploration_config" = {
+                    #   "type": "SoftQ"
+                    #   "temperature": [float, e.g. 1.0]
+                    # }
+                },
+
+                # === Evaluation ===
+                # Evaluate with epsilon=0 every `evaluation_interval` training iterations.
+                # The evaluation stats will be reported under the "evaluation" metric key.
+                # Note that evaluation is currently not parallelized, and that for Ape-X
+                # metrics are already only reported for the lowest epsilon workers.
+                "evaluation_interval": None,
+                # Number of episodes to run per evaluation period.
+                "evaluation_num_episodes": 10,
+                # Switch to greedy actions in evaluation workers.
+                "evaluation_config": {
+                    "explore": False,
+                },
+
+                # Number of env steps to optimize for before returning
+                "timesteps_per_iteration": 1000,
+                # Update the target network every `target_network_update_freq` steps.
+                "target_network_update_freq": 500,
+
+                # === Replay buffer ===
+                # Size of the replay buffer in steps.
+                "buffer_size": 10000,
+
+                # === Optimization ===
+                # Learning rate for RMSProp optimizer
+                "lr": 0.0005,
+                # RMSProp alpha
+                "optim_alpha": 0.99,
+                # RMSProp epsilon
+                "optim_eps": 0.00001,
+                # If not None, clip gradients during optimization at this value
+                "grad_norm_clipping": 10,
+                # How many steps of the model to sample before learning starts.
+                "learning_starts": 1000,
+                # Update the replay buffer with this many samples at once. Note that
+                # this setting applies per-worker if num_workers > 1.
+                "rollout_fragment_length": 4,
+                # Size of a batched sampled from replay buffer for training. Note that
+                # if async_updates is set, then each worker returns gradients for a
+                # batch of this size.
+                "train_batch_size": 32,
+
+                # === Parallelism ===
+                # Number of workers for collecting samples with. This only makes sense
+                # to increase if your environment is particularly slow to sample, or if
+                # you"re using the Async or Ape-X optimizers.
+                "num_workers": 0,
+                'env': 'g_football_qmix',
+                'num_envs_per_worker': 1,
+                'num_cpus_per_worker': 1,
+                'num_gpus': args.num_gpus,
+                # Whether to use a distribution of epsilons across workers for exploration.
+                "per_worker_exploration": False,
+                # Whether to compute priorities on workers.
+                "worker_side_prioritization": False,
+                # Prevent iterations from going lower than this time span
+                "min_iter_time_s": 1,
+
+                # === Model ===
+                "model": {
+                    "lstm_cell_size": 64,
+                    "max_seq_len": 999999,
+                },
+            })
 
     else:
         raise ValueError(
-            f"Unsupported algorithm: \"{args.run}\". Please use one of: \"PPO\", \"IMPALA\", or \"SAC\"")
+            f"Unsupported algorithm: \"{args.run}\". Please use one of: \"PPO\", \"IMPALA\", \"QMIX\" or \"SAC\"")
