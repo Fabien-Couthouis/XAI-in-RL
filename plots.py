@@ -42,7 +42,7 @@ def plot_model_rewards_pp(folder_path: str):
 
     ax = sns.lineplot(x="episode", y="sum_good_agents", data=df)
     ax.set_xlabel('Training episode number')
-    ax.set_ylabel('Reward for predators (averrage over 5 models)')
+    ax.set_ylabel('Reward for predators (average over 5 models)')
     # ax.set_title(f"Reward per episode on {len(agent_rewards[0])} episodes")
 
     # Set 1e label
@@ -114,8 +114,8 @@ def compute_shapley_value(rewards_with: np.array, rewards_without: np.array) -> 
     # print("R WITH", rewards_with)
     # print("R WITHOUT", rewards_without)
 
-    # d_rewards_with = discount_rewards(rewards_with, GAMMA).sum(axis=-1)
-    # d_rewards_without = discount_rewards(rewards_without, GAMMA).sum(axis=-1)
+    d_rewards_with = discount_rewards(rewards_with, GAMMA).sum(axis=-1)
+    d_rewards_without = discount_rewards(rewards_without, GAMMA).sum(axis=-1)
     # print(d_rewards_with[10:15])
 
     # print("D WITH", d_rewards_with)
@@ -127,7 +127,8 @@ def compute_shapley_value(rewards_with: np.array, rewards_without: np.array) -> 
     #     d_rewards_without-d_rewards_without.mean())/d_rewards_without.std()
 
     # shapley_value = np.sum(rewards_with - rewards_without, axis=-1)
-    shapley_value = rewards_with.sum(axis=-1) - rewards_without.sum(axis=-1)
+    shapley_value = d_rewards_with.sum(
+        axis=-1) - d_rewards_without.sum(axis=-1)
     # min_s = shapley_value.min()
     # max_s = shapley_value.max()
     # shapley_value = (shapley_value - min_s)/(max_s-min_s)
@@ -195,7 +196,8 @@ def plot_goal_agents_pp(folder_path: str, agent_names: List[str]):
 
     ax = sns.barplot(x="value", y="index", data=df_sum, palette="husl",
                      orient="h", order=agent_names, estimator=sum)
-    ax.set(ylabel="Percentage of time catching the prey")
+    ax.set(xlabel="Number of times the prey is caught")
+    ax.set(ylabel="Agent")
 
     # ax.set_title("Contribution of each agent (Shapley values)",
     #              BARCHAR_TEXTPROPS)
@@ -220,13 +222,13 @@ if __name__ == "__main__":
     #            'idle', 'random_player', 'random', 'idle', 'random_player']
 
     # path_pp_models = r"multiagent_particles/experiments/saves"
-    # # plot_model_rewards_pp(path=path_pp_models)
+    # plot_model_rewards_pp(path_pp_models)
     # path_pp_mc = r"multiagent_particles\experiments\rewards"
     # data = load_cat_plot_data_pp(path_pp_mc)
     # cat_plot(*data)
 
     plot_goal_agents_pp(r"multiagent_particles\experiments\goal_agents", [
-                        "agent 0", "agent 1", "agent 2"])
+                        "Predator 0", "Predator 1", "Predator 2"])
 
     # plot_shap_barchart(shapley_values, agent_names)
     # plot_shap_piechart(shapley_values, agent_names)

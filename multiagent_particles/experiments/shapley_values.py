@@ -38,6 +38,10 @@ def monte_carlo_shapley_estimation(env, arglist, trainers):
     num_good = min(env.n, env.n-arglist.num_adversaries)
     players = range(num_good)
 
+    if arglist.shapley_on_obs:
+        
+
+
     for considered_player in players:
         print("Player: ", considered_player, "/", num_good-1)
         combinations_with_player = get_combinations_for_player(
