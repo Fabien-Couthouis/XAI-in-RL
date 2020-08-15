@@ -9,7 +9,6 @@ AGENTS_COLORS = [[0.85, 0.35, 0.35], [0.25, 0.75, 0.95],
 
 class EnvWrapper(MultiAgentEnv):
     def __init__(self, scenario_name, benchmark=False):
-        self.scenario_name = scenario_name
         scenario = scenarios.load(scenario_name + ".py").Scenario()
         # create world
         world = scenario.make_world()
@@ -45,6 +44,16 @@ class EnvWrapper(MultiAgentEnv):
 
         return agents_actions
 
+    def random_observations(self):
+        'Return: list of random observations for each agent '
+        agents_obs = []
+        for i in range(self.n):
+            agent_obs_space = self.observation_space[i]
+            obs = agent_obs_space.sample()
+            agents_obs.append(obs)
+
+        return agents_obs
+
     def idle_actions(self):
         'Return: list of idle actions for each agent '
         agents_actions = []
@@ -63,6 +72,16 @@ class EnvWrapper(MultiAgentEnv):
 
         return agents_actions
 
+    def idle_observations(self):
+        'Return: list of idle observations for each agent '
+        agents_obs = []
+        for i in range(self.n):
+            agent_obs_space = self.observation_space[i]
+            obs = np.zeros_like(agent_obs_space.sample())
+            agents_obs.append(obs)
+
+        return agents_obs
+
     def winning_agent(self):
         'Get predator that is in collision with prey'
 
@@ -72,22 +91,12 @@ class EnvWrapper(MultiAgentEnv):
             dist_min = agent1.size + agent2.size
             return True if dist < dist_min else False
 
-        if self.scenario_name == "simple_tag":
+        preys = [agent for agent in self.world.agents if not agent.adversary]
+        predators = self.agents
 
-            preys = [agent for agent in self.world.agents if not agent.adversary]
-            predators = self.agents
-
-            for pred in predators:
-                if pred.collide:
-                    for prey in preys:
-                        if is_collision(prey, pred):
-                            return pred
-        else:
-            adversary = [agent for agent in self.world.agents if agent.adversary][0]
-
-            if adversary.collide:
-                if is_collision(adversary, adversary.goal_a):
-                    return adversary
-
-
+        for pred in predators:
+            if pred.collide:
+                for prey in preys:
+                    if is_collision(prey, pred):
+                        return pred
         return None  # episode not over
