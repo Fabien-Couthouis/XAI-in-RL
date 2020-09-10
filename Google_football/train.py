@@ -52,7 +52,7 @@ def create_parser(parser_creator=None):
 def gen_policies(obs_space, act_space, num_agents):
     'Generate policies dict {policy_name: (policy_type, obs_space, act_space, {"agent_id": i})}'
     policy = (None, obs_space, act_space)
-    agent_names = [f"agent_{agent_id}" for agent_id in range(num_agents)]
+    agent_names = [agent_id for agent_id in range(num_agents)]
     policies = {policy_agent_mapping(agent_name): policy + ({"agent_id": agent_id},)
                 for agent_id, agent_name in enumerate(agent_names)}
     return policies
@@ -406,6 +406,7 @@ if __name__ == '__main__':
             }
         )
     elif args.run == "QMIX":
+        print("obs_space: ", obs_space)
         grouping = {
             "group_1": list(range(args.num_agents)),
         }
@@ -423,9 +424,9 @@ if __name__ == '__main__':
         # Create and register google football env
 
         def create_env_qmix(_): return RllibGFootball(args.num_agents, args.scenario_name, render=False,
-                                                      actions_are_logits=actions_are_logits).with_agent_groups(grouping,
-                                                                                                               obs_space=obs_space_qmix,
-                                                                                                               act_space=act_space_qmix)
+                                                      with_state=True).with_agent_groups(grouping,
+                                                                                         obs_space=obs_space_qmix,
+                                                                                         act_space=act_space_qmix)
 
         register_env('g_football_qmix', create_env_qmix)
 
@@ -435,73 +436,17 @@ if __name__ == '__main__':
             checkpoint_freq=args.checkpoint_freq,
             resume=args.resume,
             config={
-                # === QMix ===
-                # Mixing network. Either "qmix", "vdn", or None
-                "mixer": "qmix",
-                # Size of the mixing network embedding
-                "mixing_embed_dim": 32,
-                # Whether to use Double_Q learning
-                "double_q": True,
-                # Optimize over complete episodes by default.
-                "batch_mode": "complete_episodes",
-
-                # === Exploration Settings ===
-                "exploration_config": {
-                    # The Exploration class to use.
-                    "type": "EpsilonGreedy",
-                    # Config for the Exploration class' constructor:
-                    "initial_epsilon": 1.0,
-                    "final_epsilon": 0.02,
-                    # Timesteps over which to anneal epsilon.
-                    "epsilon_timesteps": 10000,
-
-                    # For soft_q, use:
-                    # "exploration_config" = {
-                    #   "type": "SoftQ"
-                    #   "temperature": [float, e.g. 1.0]
-                    # }
-                },
-
-                # === Evaluation ===
-                # Evaluate with epsilon=0 every `evaluation_interval` training iterations.
-                # The evaluation stats will be reported under the "evaluation" metric key.
-                # Note that evaluation is currently not parallelized, and that for Ape-X
-                # metrics are already only reported for the lowest epsilon workers.
-                "evaluation_interval": None,
-                # Number of episodes to run per evaluation period.
-                "evaluation_num_episodes": 10,
-                # Switch to greedy actions in evaluation workers.
-                "evaluation_config": {
-                    "explore": False,
-                },
-
-                # Number of env steps to optimize for before returning
-                "timesteps_per_iteration": 1000,
-                # Update the target network every `target_network_update_freq` steps.
-                "target_network_update_freq": 500,
-
-                # === Replay buffer ===
-                # Size of the replay buffer in steps.
-                "buffer_size": 10000,
-
-                # === Optimization ===
-                # Learning rate for RMSProp optimizer
-                "lr": 0.0005,
-                # RMSProp alpha
-                "optim_alpha": 0.99,
-                # RMSProp epsilon
-                "optim_eps": 0.00001,
-                # If not None, clip gradients during optimization at this value
-                "grad_norm_clipping": 10,
-                # How many steps of the model to sample before learning starts.
-                "learning_starts": 1000,
-                # Update the replay buffer with this many samples at once. Note that
-                # this setting applies per-worker if num_workers > 1.
                 "rollout_fragment_length": 4,
-                # Size of a batched sampled from replay buffer for training. Note that
-                # if async_updates is set, then each worker returns gradients for a
-                # batch of this size.
                 "train_batch_size": 32,
+                "exploration_config": {
+                    "epsilon_timesteps": 5000,
+                    "final_epsilon": 0.05,
+                },
+                "mixer": "qmix",
+                "env_config": {
+                    "separate_state_space": True,
+                    "one_hot_state_encoding": False
+                },
 
                 # === Parallelism ===
                 # Number of workers for collecting samples with. This only makes sense
@@ -522,7 +467,7 @@ if __name__ == '__main__':
                 # === Model ===
                 "model": {
                     "lstm_cell_size": 64,
-                    "max_seq_len": 999999,
+                    # "max_seq_len": 999999,
                 },
             })
 

@@ -1,7 +1,8 @@
-import gym
-import gfootball.env as football_env
 import numpy as np
-from ray.rllib.env.multi_agent_env import MultiAgentEnv
+from gym.spaces import Box, Dict, Discrete
+
+import gfootball.env as football_env
+from ray.rllib.env.multi_agent_env import ENV_STATE, MultiAgentEnv
 
 
 class RllibGFootball(MultiAgentEnv):
@@ -15,8 +16,8 @@ class RllibGFootball(MultiAgentEnv):
             dump_frequency=1,
             number_of_left_players_agent_controls=num_agents,
             channel_dimensions=(42, 42))
-        self.action_space = gym.spaces.Discrete(self.env.action_space.nvec[1])
-        self.observation_space = gym.spaces.Box(
+        self.action_space = Discrete(self.env.action_space.nvec[1])
+        self.observation_space = Box(
             low=self.env.observation_space.low[0],
             high=self.env.observation_space.high[0],
             dtype=self.env.observation_space.dtype)
@@ -25,27 +26,29 @@ class RllibGFootball(MultiAgentEnv):
         self.actions_are_logits = actions_are_logits
         self.with_state = with_state
 
+        if self.with_state:
+            self.observation_space = Dict({
+                "obs": self.observation_space,
+                ENV_STATE: self.observation_space
+            })
+
     def close(self):
         self.env.close()
-
-    # def normalize_obs(self, obs):
-    #   for index1, ob in enumerate(obs):
-    #     for index2, o in enumerate(ob):
-    #       if o < -1:
-    #         ob[index2] = -1.0
-    #       if o > 1:
-    #         ob[index2] = 1.0
-    #     obs[index1] = ob
-    #   return obs
 
     def reset(self):
         initial_obs = self.env.reset()
         obs = {}
-        for x in range(self.num_agents):
+        for agent_id in range(self.num_agents):
+            key = agent_id
             if self.num_agents > 1:
-                obs['agent_%d' % x] = initial_obs[x]
+                if self.with_state:
+                    obs[key] = {'obs': initial_obs[agent_id],
+                                ENV_STATE: initial_obs[agent_id]}
+                else:
+                    obs[key] = initial_obs[agent_id]
             else:
-                obs['agent_%d' % x] = initial_obs
+                obs[key] = initial_obs
+        # print("reset", obs)
         return obs
 
     def step(self, action_dict):
@@ -60,7 +63,6 @@ class RllibGFootball(MultiAgentEnv):
         for key, value in sorted(action_dict.items()):
             actions.append(value)
         o, r, d, i = self.env.step(actions)
-        # o = self.normalize_obs(o)
         rewards, obs, infos = {}, {}, {}
         for pos, key in enumerate(sorted(action_dict.keys())):
             infos[key] = i
@@ -68,7 +70,7 @@ class RllibGFootball(MultiAgentEnv):
                 rewards[key] = r[pos]
 
                 if self.with_state:
-                    obs[key] = {"obs": o[pos], "ENV_STATE": o[pos]}
+                    obs[key] = {'obs': o[pos], ENV_STATE: o[pos]}
 
                 else:
                     obs[key] = o[pos]
@@ -76,6 +78,7 @@ class RllibGFootball(MultiAgentEnv):
                 rewards[key] = r
                 obs[key] = o
         dones = {'__all__': d}
+        # print("step",obs)
         return obs, rewards, dones, infos
 
     def render(self):
@@ -85,15 +88,13 @@ class RllibGFootball(MultiAgentEnv):
         'Return: list of random actions for each agent '
         agents_actions = {}
         for agent_id in range(self.num_agents):
-            key = "agent_"+str(agent_id)
-            agents_actions[key] = self.action_space.sample()
+            agents_actions[agent_id] = self.action_space.sample()
         return agents_actions
 
     def idle_actions(self):
         'Return: list of idle (no move) actions for each agent '
         agents_actions = {}
         for agent_id in range(self.num_agents):
-            key = "agent_"+str(agent_id)
             action_idle = 0
-            agents_actions[key] = action_idle
+            agents_actions[agent_id] = action_idle
         return agents_actions
