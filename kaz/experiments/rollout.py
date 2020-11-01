@@ -17,7 +17,7 @@ import ray
 from ray.rllib.agents.registry import get_agent_class
 from ray.rllib.env import MultiAgentEnv
 from ray.rllib.env.base_env import _DUMMY_AGENT_ID
-from ray.rllib.utils.space_utils import flatten_to_single_ndarray
+from ray.rllib.utils.spaces.space_utils import flatten_to_single_ndarray
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 
 

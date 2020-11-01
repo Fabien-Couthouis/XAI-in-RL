@@ -4,6 +4,9 @@ sandbox.py
 #Google football replays
 Google_football/replays/
 
+#Google football replays
+kaz/experiments/checkpoints/
+
 #Vscode folder
 .vscode
 

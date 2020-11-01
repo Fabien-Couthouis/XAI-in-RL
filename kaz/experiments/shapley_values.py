@@ -5,7 +5,7 @@ import random
 from itertools import combinations, permutations
 from statistics import mean
 from scipy.spatial.distance import euclidean
-from rollout import rollout
+from .rollout import rollout
 DEBUG = False
 
 

@@ -37,7 +37,7 @@ def create_parser(parser_creator=None):
         epilog=EXAMPLE_USAGE)
     parser.add_argument(
         "--scenario-name", default=None, help="Change scenario name.")
-    parser.add_argument('--num-iters', type=int, default=60)
+    parser.add_argument('--num-iters', type=int, default=100)
     parser.add_argument('--simple', action='store_true')
     parser.add_argument("--num-gpus", default=1, type=int,
                         help="number of gpus to use if starting a new cluster.")
@@ -114,7 +114,7 @@ if __name__ == '__main__':
                 # execute per train batch).
                 "num_sgd_iter": 30,
                 # Stepsize of SGD.
-                "lr": 5e-4,
+                "lr": 3e-4,
                 # Learning rate schedule.
                 "lr_schedule": None,
                 # Share layers for value function. If you set this to True, it's important

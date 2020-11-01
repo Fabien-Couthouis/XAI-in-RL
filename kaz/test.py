@@ -212,4 +212,7 @@ if __name__ == "__main__":
     # Register custom envs
 
     def create_env(config=None): return ParallelPettingZooEnv(config=config)
+
+    # Register custom envs
+    register_env("kaz", create_env)
     run(args, parser)
