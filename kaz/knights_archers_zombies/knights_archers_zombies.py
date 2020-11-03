@@ -164,7 +164,7 @@ class raw_env(AECEnv, EzPickle):
             a_count += 1
 
         self.observation_spaces = dict(zip(self.agents, [Box(low=0, high=255, shape=(
-            84, 84, 3), dtype=np.uint8) for _ in enumerate(self.agents)]))
+            512, 512, 3), dtype=np.uint8) for _ in enumerate(self.agents)]))
         self.action_spaces = dict(
             zip(self.agents, [Discrete(6) for _ in enumerate(self.agents)]))
         self.display_wait = 0.0
