@@ -19,6 +19,7 @@ class ParallelPettingZooEnv(MultiAgentEnv):
         # agent idx list
         self.agents = self.par_env.agents
         self._with_state = config.get("with_state", False)
+        self._actions_are_logits = config.get("actions_are_logits", False)
 
         # Get dictionaries of obs_spaces and act_spaces
         # self.observation_spaces = self.par_env.observation_spaces
@@ -29,7 +30,7 @@ class ParallelPettingZooEnv(MultiAgentEnv):
         # Get first observation space, assuming all agents have equal space
         self.observation_space = self.observation_spaces[self.agents[0]]
         if self._with_state:
-            # Global state for QMix
+            # Add global state for QMix
             self.observation_space = Dict({
                 "obs": self.observation_space,
                 ENV_STATE: self.observation_space
@@ -68,6 +69,8 @@ class ParallelPettingZooEnv(MultiAgentEnv):
         return archers_list, knights_list
 
     def reset(self):
+        # print("reset")
+
         observations = self.par_env.reset()
         for agent, obs in observations.items():
             observations[agent] = self._preprocess(obs)
@@ -76,13 +79,22 @@ class ParallelPettingZooEnv(MultiAgentEnv):
 
     def _preprocess(self, obs):
         obs = cv2.resize(np.float32(obs), (OBS_SIZE, OBS_SIZE))
+        # obs = np.zeros((168, 168, 3),  dtype=np.uint8)
         if self._with_state:
             obs = {'obs': obs,
                    ENV_STATE: obs}
         return obs
 
     def step(self, action_dict):
+
+        # print("step")
+        if self._actions_are_logits:
+            action_dict = {
+                k: np.random.choice(range(self.action_space.n), p=v)
+                for k, v in action_dict.items()
+            }
         aobs, arew, adones, ainfo = self.par_env.step(action_dict)
+
         obss = {}
         rews = {}
         dones = {}
