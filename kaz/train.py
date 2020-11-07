@@ -228,7 +228,7 @@ if __name__ == '__main__':
             "buffer_size": int(1e6),
             # Observation compression. Note that compression makes simulation slow in
             # MPE.
-            "compress_observations": True,
+            "compress_observations": False,
             # If set, this will fix the ratio of replayed from a buffer and learned on
             # timesteps to sampled from an environment and stored in the replay buffer
             # timesteps. Otherwise, the replay will proceed at the native ratio
@@ -363,6 +363,9 @@ if __name__ == '__main__':
             # === COMMON CONFIG ===
             'env': 'kaz_qmix',
         }
+    else:
+        raise ValueError(
+            "Algorithm configuration has not been provided:", args.run)
 
     config["env"] = ParallelPettingZooEnv
 
