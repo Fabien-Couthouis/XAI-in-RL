@@ -20,6 +20,8 @@ def create_parser(parser_creator=None):
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Train a reinforcement learning agent.")
     parser.add_argument('--num-iters', type=int, default=100)
+    parser.add_argument('--render', action="store_true",
+                        help="Render the environement during training")
     parser.add_argument("--resume", action="store_true",
                         help="Whether to attempt to resume previous Tune experiments.")
     return parser
@@ -30,8 +32,13 @@ class CleanerWrapper(MultiAgentEnv):
     def __init__(self, env_config):
         self.env = EnvCleaner(
             env_config['N_agent'], env_config['map_size'], env_config['seed'], env_config['max_iters'])
+        self._render = env_config.get("render", False)
 
     def step(self, action_dict):
+        print(self._render)
+
+        if self._render:
+            self.env.render()
         action_list = []
         for k in action_dict:
             action_list.append(action_dict[k])
@@ -95,7 +102,8 @@ if __name__ == "__main__":
             "N_agent": n_agent,
             "map_size": map_size,
             "seed": None,
-            "max_iters": max_iters
+            "max_iters": max_iters,
+            "render": args.render
         },
         "model": {
             "custom_model": "my_model"
