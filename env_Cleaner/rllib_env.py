@@ -102,11 +102,11 @@ if __name__ == "__main__":
         },
         "multiagent": {
             "policies": {
-                "default_policy": (None, Box(low=0.0, high=1.0, shape=(map_size, map_size, 3), dtype=np.float32), Discrete(4), {})
+                f"pol_agent_{agent_id}": (None, Box(low=0.0, high=1.0, shape=(map_size, map_size, 3), dtype=np.float32), Discrete(4), {}) for agent_id in range(n_agent)
             },
             "policy_mapping_fn":
                 lambda agent_id:
-                    "default_policy"
+                    f"pol_{agent_id}"
         }
     }
     ray.init()
