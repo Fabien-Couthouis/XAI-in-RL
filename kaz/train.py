@@ -170,13 +170,13 @@ if __name__ == '__main__':
             'num_cpus_per_worker': 1,
             # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
             "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
-            "framework": "torch" if args.torch else "tf",
+            # "framework": "TF" if args.torch else "tf",
             'log_level': 'WARN',
             'multiagent': {
                 'policies': policies,
                 'policy_mapping_fn': policy_agent_mapping,
             },
-        },
+        }
 
     elif args.run.upper() == "CONTRIB/MADDPG":
 
@@ -228,7 +228,7 @@ if __name__ == '__main__':
             "buffer_size": int(1e6),
             # Observation compression. Note that compression makes simulation slow in
             # MPE.
-            "compress_observations": False,
+            "compress_observations": True,
             # If set, this will fix the ratio of replayed from a buffer and learned on
             # timesteps to sampled from an environment and stored in the replay buffer
             # timesteps. Otherwise, the replay will proceed at the native ratio
@@ -256,7 +256,7 @@ if __name__ == '__main__':
             # Size of a batched sampled from replay buffer for training. Note that
             # if async_updates is set, then each worker returns gradients for a
             # batch of this size.
-            "train_batch_size": 1024,
+            "train_batch_size": 16,
             # Number of env steps to optimize for before returning
             "timesteps_per_iteration": 0,
             # Prevent iterations from going lower than this time span
@@ -273,9 +273,9 @@ if __name__ == '__main__':
             "env_config": {
                 "actions_are_logits": True,
             },
-            # 'num_workers': 1,
-            # 'num_envs_per_worker': 1,
-            # 'num_cpus_per_worker': 1,
+            'num_workers': 1,
+            'num_envs_per_worker': 1,
+            'num_cpus_per_worker': 3,
             'num_gpus': int(os.environ.get("RLLIB_NUM_GPUS", "0")),
             'batch_mode': 'truncate_episodes',
             'log_level': 'DEBUG',
@@ -364,9 +364,8 @@ if __name__ == '__main__':
             'env': 'kaz_qmix',
         }
 
-    config = dict(config, **{
-        "env": ParallelPettingZooEnv,
-    })
+    config["env"] = ParallelPettingZooEnv
+
     tune.run(
         args.run,
         stop={'training_iteration': args.num_iters},
