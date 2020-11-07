@@ -35,8 +35,6 @@ class CleanerWrapper(MultiAgentEnv):
         self._render = env_config.get("render", False)
 
     def step(self, action_dict):
-        print(self._render)
-
         if self._render:
             self.env.render()
         action_list = []
