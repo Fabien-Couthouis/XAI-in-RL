@@ -1,5 +1,6 @@
 import argparse
 
+import cv2
 import numpy as np
 import ray
 from gym.spaces import Box, Discrete
@@ -27,14 +28,39 @@ def create_parser(parser_creator=None):
     return parser
 
 
+def gen_policies(obs_space, act_space, num_agents):
+    'Generate policies dict {policy_name: (policy_type, obs_space, act_space, {"agent_id": i})}'
+    policy = (None, obs_space, act_space)
+    agent_names = [f"agent_{i}" for i in range(num_agents)]
+    policies = {policy_agent_mapping(agent_name): policy + ({"agent_id": agent_id},)
+                for agent_id, agent_name in enumerate(agent_names)}
+    return policies
+
+
+def policy_agent_mapping(agent_name):
+    'Maps agent name to policy name'
+    return f"policy_{agent_name}"
+
+
+OBS_SIZE = 42
+ACT_SPACE = 4
+
+
 class CleanerWrapper(MultiAgentEnv):
 
     def __init__(self, env_config):
         self.env = EnvCleaner(
             env_config['N_agent'], env_config['map_size'], env_config['seed'], env_config['max_iters'])
         self._render = env_config.get("render", False)
+        self._actions_are_logits = env_config.get("actions_are_logits", False)
 
     def step(self, action_dict):
+        if self._actions_are_logits:
+            action_dict = {
+                k: np.random.choice(range(ACT_SPACE), p=v)
+                for k, v in action_dict.items()
+            }
+
         if self._render:
             self.env.render()
         action_list = []
@@ -49,7 +75,7 @@ class CleanerWrapper(MultiAgentEnv):
         infos = {}
         for k in action_dict:
             reward_dict[k] = reward
-            obs_dict[k] = obs
+            obs_dict[k] = self._preprocess(obs)
             infos[k] = {}
             dones[k] = True if ep_over else False
         return obs_dict, reward_dict, dones, infos
@@ -57,8 +83,14 @@ class CleanerWrapper(MultiAgentEnv):
     def reset(self):
         self.env.reset()
         obs = self.env.get_global_obs()
+        obs = self._preprocess(obs)
         obs_dict = {f'agent_{i}': obs for i in range(self.env.N_agent)}
+
         return obs_dict
+
+    def _preprocess(self, obs):
+        obs = cv2.resize(np.float32(obs), (OBS_SIZE, OBS_SIZE))
+        return obs
 
     def render(self):
         self.env.render()
@@ -93,28 +125,111 @@ if __name__ == "__main__":
     n_agent = 3
     map_size = 43
     max_iters = 1000
+    policies = gen_policies(Box(low=0.0, high=1.0, shape=(
+        OBS_SIZE, OBS_SIZE, 3), dtype=np.float32), Discrete(ACT_SPACE), n_agent)
 
-    config = {
-        "env": CleanerWrapper,
-        "env_config": {
-            "N_agent": n_agent,
-            "map_size": map_size,
-            "seed": None,
-            "max_iters": max_iters,
-            "render": args.render
-        },
-        "model": {
-            "custom_model": "my_model"
-        },
-        "multiagent": {
-            "policies": {
-                f"pol_agent_{agent_id}": (None, Box(low=0.0, high=1.0, shape=(map_size, map_size, 3), dtype=np.float32), Discrete(4), {}) for agent_id in range(n_agent)
+    if args.run.upper() == "PPO":
+        config = {
+            "env": CleanerWrapper,
+            "env_config": {
+                "N_agent": n_agent,
+                "map_size": map_size,
+                "seed": None,
+                "max_iters": max_iters,
+                "render": args.render
             },
-            "policy_mapping_fn":
-                lambda agent_id:
-                    f"pol_{agent_id}"
+            "model": {
+                "custom_model": "my_model"
+            },
+            "multiagent": {
+                "policies": policies,
+                "policy_mapping_fn": policy_agent_mapping
+            }
         }
-    }
+
+    elif args.run.upper() == "CONTRIB/MADDPG":
+
+        config = {
+
+            # === Framework to run the algorithm ===
+            "framework": "tf",
+            # === Evaluation ===
+            # Evaluation interval
+            "evaluation_interval": None,
+            # Number of episodes to run per evaluation period.
+            "evaluation_num_episodes": 10,
+
+            # === Model ===
+            # Apply a state preprocessor with spec given by the "model" config option
+            # (like other RL algorithms). This is mostly useful if you have a weird
+            # observation shape, like an image. Disabled by default.
+            "use_state_preprocessor": True,
+            # === Replay buffer ===
+            # Size of the replay buffer. Note that if async_updates is set, then
+            # each worker will have a replay buffer of this size.
+            "buffer_size": int(1e6),
+            # Observation compression. Note that compression makes simulation slow in
+            # MPE.
+            "compress_observations": False,
+            # If set, this will fix the ratio of replayed from a buffer and learned on
+            # timesteps to sampled from an environment and stored in the replay buffer
+            # timesteps. Otherwise, the replay will proceed at the native ratio
+            # determined by (train_batch_size / rollout_fragment_length).
+            "training_intensity": None,
+
+            # === Optimization ===
+            # Learning rate for the critic (Q-function) optimizer.
+            "critic_lr": 1e-2,
+            # Learning rate for the actor (policy) optimizer.
+            "actor_lr": 1e-2,
+            # Update the target network every `target_network_update_freq` steps.
+            "target_network_update_freq": 0,
+            # Update the target by \tau * policy + (1-\tau) * target_policy
+            "tau": 0.01,
+            # Weights for feature regularization for the actor
+            "actor_feature_reg": 0.001,
+            # If not None, clip gradients during optimization at this value
+            "grad_norm_clipping": 0.5,
+            # How many steps of the model to sample before learning starts.
+            "learning_starts": 1024 * 25,
+            # Update the replay buffer with this many samples at once. Note that this
+            # setting applies per-worker if num_workers > 1.
+            "rollout_fragment_length": 100,
+            # Size of a batched sampled from replay buffer for training. Note that
+            # if async_updates is set, then each worker returns gradients for a
+            # batch of this size.
+            "train_batch_size": 16,
+            # Number of env steps to optimize for before returning
+            "timesteps_per_iteration": 0,
+            # Prevent iterations from going lower than this time span
+            "min_iter_time_s": 0,
+
+
+            # "model": {
+            #     "custom_model": "my_model"
+            # },
+
+            # === COMMON CONFIG ===
+            "env": CleanerWrapper,
+
+            "env_config": {
+                "N_agent": n_agent,
+                "map_size": map_size,
+                "seed": None,
+                "max_iters": max_iters,
+                "render": args.render,
+                "actions_are_logits": True,
+            },
+
+            'batch_mode': 'truncate_episodes',
+            'log_level': 'DEBUG',
+
+            "multiagent": {
+                "policies": policies,
+                "policy_mapping_fn": policy_agent_mapping
+            }
+        }
+
     ray.init()
 
     tune.run(
