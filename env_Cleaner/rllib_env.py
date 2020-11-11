@@ -3,14 +3,16 @@ import argparse
 import cv2
 import numpy as np
 import ray
-from gym.spaces import Box, Discrete
+from gym.spaces import Box, Discrete, Tuple, Dict
 from ray import tune
 from ray.rllib.agents import ppo
 from ray.rllib.env import MultiAgentEnv
+from ray.rllib.env.multi_agent_env import ENV_STATE
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.rllib.models.tf.tf_modelv2 import TFModelV2
 from ray.tune.config_parser import make_parser
+from ray.tune.registry import register_env
 
 from env_Cleaner import EnvCleaner
 
@@ -125,8 +127,30 @@ if __name__ == "__main__":
     n_agent = 3
     map_size = 43
     max_iters = 1000
-    policies = gen_policies(Box(low=0.0, high=1.0, shape=(
-        OBS_SIZE, OBS_SIZE, 3), dtype=np.float32), Discrete(ACT_SPACE), n_agent)
+    obs_space = Box(low=0.0, high=1.0, shape=(
+        OBS_SIZE, OBS_SIZE, 3), dtype=np.float32)
+    act_space = Discrete(ACT_SPACE)
+    policies = gen_policies(obs_space, act_space, n_agent)
+    
+    env_config = {
+                "N_agent": n_agent,
+                "map_size": map_size,
+                "seed": None,
+                "max_iters": max_iters,
+                "render": args.render,
+                "actions_are_logits": True,
+            }
+    
+    if args.run.upper() == "QMIX":
+        # Qmix spaces
+        obs_space = Tuple([
+            Dict({
+                "obs": obs_space
+            }) for _ in range(n_agent)
+        ])
+        act_space = Tuple([
+            act_space for _ in range(n_agent)
+        ])
 
     if args.run.upper() == "PPO":
         config = {
@@ -145,6 +169,79 @@ if __name__ == "__main__":
                 "policies": policies,
                 "policy_mapping_fn": policy_agent_mapping
             }
+        }
+    
+    elif args.run.upper() == "QMIX":
+        grouping = {
+            "agents": [f"agent_{i}" for i in range(n_agent)],
+        }
+
+        # Create and register env
+
+        def create_env_qmix(env_config): return CleanerWrapper(env_config).with_agent_groups(grouping,
+                                                                                                            obs_space=obs_space,
+                                                                                                            act_space=act_space)
+
+        register_env('cleaner_qmix', create_env_qmix)
+
+        config = {
+
+            # === QMix ===
+            # Mixing network. Either "qmix", "vdn", or None
+            "mixer": "qmix",
+            # Size of the mixing network embedding
+            "mixing_embed_dim": 32,
+            # Whether to use Double_Q learning
+            "double_q": True,
+            # Optimize over complete episodes by default.
+            "batch_mode": "complete_episodes",
+
+            # === Evaluation ===
+            # Evaluate with epsilon=0 every `evaluation_interval` training iterations.
+            # The evaluation stats will be reported under the "evaluation" metric key.
+            # Note that evaluation is currently not parallelized, and that for Ape-X
+            # metrics are already only reported for the lowest epsilon workers.
+            "evaluation_interval": None,
+            # Number of episodes to run per evaluation period.
+            "evaluation_num_episodes": 10,
+
+            # === Replay buffer ===
+            # Size of the replay buffer in steps.
+            "buffer_size": 10000,
+
+            # === Optimization ===
+            # Learning rate for RMSProp optimizer
+            "lr": 0.0005,
+            # RMSProp alpha
+            "optim_alpha": 0.99,
+            # RMSProp epsilon
+            "optim_eps": 0.00001,
+            # If not None, clip gradients during optimization at this value
+            "grad_norm_clipping": 10,
+            # How many steps of the model to sample before learning starts.
+            "learning_starts": 1000,
+            # Size of a batched sampled from replay buffer for training. Note that
+            # if async_updates is set, then each worker returns gradients for a
+            # batch of this size.
+            "train_batch_size": 32,
+
+
+            # 'num_gpus': int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+            # Whether to use a distribution of epsilons across workers for exploration.
+            "per_worker_exploration": False,
+            # Whether to compute priorities on workers.
+            "worker_side_prioritization": False,
+            # Prevent iterations from going lower than this time span
+            "min_iter_time_s": 1,
+
+            # === Model ===
+            "model": {
+                "lstm_cell_size": 64,
+            },
+
+            # === COMMON CONFIG ===
+            'env': 'cleaner_qmix',
+            'env_config': env_config
         }
 
     elif args.run.upper() == "CONTRIB/MADDPG":
@@ -214,14 +311,7 @@ if __name__ == "__main__":
             # === COMMON CONFIG ===
             "env": CleanerWrapper,
 
-            "env_config": {
-                "N_agent": n_agent,
-                "map_size": map_size,
-                "seed": None,
-                "max_iters": max_iters,
-                "render": args.render,
-                "actions_are_logits": True,
-            },
+            "env_config": env_config,
 
             'batch_mode': 'truncate_episodes',
             'log_level': 'DEBUG',
