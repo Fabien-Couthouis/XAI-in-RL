@@ -76,7 +76,7 @@ def create_parser(parser_creator=None):
         help="Wrap environment in gym Monitor to record video.")
     parser.add_argument(
         "--steps",
-        default=100,
+        default=10000,
         type=int,
         help="Number of steps to roll out.")
     parser.add_argument("--out", default=None, help="Output filename.")
@@ -170,6 +170,9 @@ def run(args, parser):
         if not config.get("env"):
             parser.error("the following arguments are required: --env")
         args.env = config.get("env")
+    
+    config["env_config"]["max_iters"] = args.steps
+    config["env_config"]["map_size"] = 15
 
     ray.init()
 

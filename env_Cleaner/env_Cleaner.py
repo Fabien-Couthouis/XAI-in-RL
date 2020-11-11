@@ -69,7 +69,8 @@ class EnvCleaner(object):
         return reward
 
     def is_episode_over(self):
-        return self.dirty_count == 0 or self.iters == self.max_iters
+        print("DIRTY COUNT: ", self.dirty_count)
+        return self.dirty_count <= 0 or self.iters == self.max_iters
 
     def get_global_obs(self):
         obs = np.zeros((self.map_size, self.map_size, 3))
@@ -90,6 +91,7 @@ class EnvCleaner(object):
         return obs
 
     def reset(self):
+        self.dirty_count = 0
         self.occupancy = self.generate_maze(self.seed)
         self.agt_pos_list = []
         for i in range(self.N_agent):

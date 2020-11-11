@@ -151,6 +151,8 @@ if __name__ == "__main__":
 
         config = {
 
+            "num_workers": 2,
+
             # === Framework to run the algorithm ===
             "framework": "tf",
             # === Evaluation ===
@@ -194,7 +196,7 @@ if __name__ == "__main__":
             "learning_starts": 1024 * 25,
             # Update the replay buffer with this many samples at once. Note that this
             # setting applies per-worker if num_workers > 1.
-            "rollout_fragment_length": 100,
+            "rollout_fragment_length": 10,
             # Size of a batched sampled from replay buffer for training. Note that
             # if async_updates is set, then each worker returns gradients for a
             # batch of this size.
