@@ -53,6 +53,7 @@ class CleanerWrapper(MultiAgentEnv):
     def __init__(self, env_config):
         self.env = EnvCleaner(
             env_config['N_agent'], env_config['map_size'], env_config['seed'], env_config['max_iters'])
+        self.with_state = env_config['with_state']
         self._render = env_config.get("render", False)
         self._actions_are_logits = env_config.get("actions_are_logits", False)
 
@@ -92,6 +93,11 @@ class CleanerWrapper(MultiAgentEnv):
 
     def _preprocess(self, obs):
         obs = cv2.resize(np.float32(obs), (OBS_SIZE, OBS_SIZE))
+        if self.with_state:
+            obs = {
+                "obs": obs,
+                ENV_STATE: obs
+            }
         return obs
 
     def render(self):
@@ -139,19 +145,9 @@ if __name__ == "__main__":
                 "max_iters": max_iters,
                 "render": args.render,
                 "actions_are_logits": True,
+                "with_state": True
             }
-    
-    if args.run.upper() == "QMIX":
-        # Qmix spaces
-        obs_space = Tuple([
-            Dict({
-                "obs": obs_space
-            }) for _ in range(n_agent)
-        ])
-        act_space = Tuple([
-            act_space for _ in range(n_agent)
-        ])
-
+        
     if args.run.upper() == "PPO":
         config = {
             "env": CleanerWrapper,
@@ -172,8 +168,18 @@ if __name__ == "__main__":
         }
     
     elif args.run.upper() == "QMIX":
+        # Qmix spaces
+        obs_space = Tuple([
+            Dict({
+                "obs": obs_space,
+                ENV_STATE: obs_space
+            }) for _ in range(n_agent)
+        ])
+        act_space = Tuple([
+            act_space for _ in range(n_agent)
+        ])
         grouping = {
-            "agents": [f"agent_{i}" for i in range(n_agent)],
+            "agents": [i for i in range(n_agent)],
         }
 
         # Create and register env
