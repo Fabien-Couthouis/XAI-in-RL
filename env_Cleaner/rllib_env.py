@@ -131,7 +131,7 @@ if __name__ == "__main__":
     # while True:
     #     env.render()
     n_agent = 3
-    map_size = 43
+    map_size = 15
     max_iters = 1000
     obs_space = Box(low=0.0, high=1.0, shape=(
         OBS_SIZE, OBS_SIZE, 3), dtype=np.float32)

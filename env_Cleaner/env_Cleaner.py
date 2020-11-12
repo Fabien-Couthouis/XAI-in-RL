@@ -91,6 +91,7 @@ class EnvCleaner(object):
 
     def reset(self):
         self.dirty_count = 0
+        self.iters = 0
         self.occupancy = self.generate_maze(self.seed)
         self.agt_pos_list = []
         for i in range(self.N_agent):
