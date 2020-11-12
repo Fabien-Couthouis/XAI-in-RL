@@ -137,17 +137,17 @@ if __name__ == "__main__":
         OBS_SIZE, OBS_SIZE, 3), dtype=np.float32)
     act_space = Discrete(ACT_SPACE)
     policies = gen_policies(obs_space, act_space, n_agent)
-    
+
     env_config = {
-                "N_agent": n_agent,
-                "map_size": map_size,
-                "seed": None,
-                "max_iters": max_iters,
-                "render": args.render,
-                "actions_are_logits": True,
-                "with_state": True
-            }
-        
+        "N_agent": n_agent,
+        "map_size": map_size,
+        "seed": None,
+        "max_iters": max_iters,
+        "render": args.render,
+        "actions_are_logits": args.run.upper() == "CONTRIB/MADDPG",
+        "with_state": True
+    }
+
     if args.run.upper() == "PPO":
         config = {
             "env": CleanerWrapper,
@@ -166,7 +166,7 @@ if __name__ == "__main__":
                 "policy_mapping_fn": policy_agent_mapping
             }
         }
-    
+
     elif args.run.upper() == "QMIX":
         # Qmix spaces
         obs_space = Tuple([
@@ -179,14 +179,14 @@ if __name__ == "__main__":
             act_space for _ in range(n_agent)
         ])
         grouping = {
-            "agents": [i for i in range(n_agent)],
+            "agents": [f'agent_{i}' for i in range(n_agent)],
         }
 
         # Create and register env
 
         def create_env_qmix(env_config): return CleanerWrapper(env_config).with_agent_groups(grouping,
-                                                                                                            obs_space=obs_space,
-                                                                                                            act_space=act_space)
+                                                                                             obs_space=obs_space,
+                                                                                             act_space=act_space)
 
         register_env('cleaner_qmix', create_env_qmix)
 

@@ -69,7 +69,6 @@ class EnvCleaner(object):
         return reward
 
     def is_episode_over(self):
-        print("DIRTY COUNT: ", self.dirty_count)
         return self.dirty_count <= 0 or self.iters == self.max_iters
 
     def get_global_obs(self):
