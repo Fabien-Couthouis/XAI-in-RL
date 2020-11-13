@@ -9,8 +9,10 @@ import pickle
 import random
 import shelve
 from pathlib import Path
+import numpy as np
 
 import gym
+from gym.spaces import Box, Discrete, Tuple, Dict
 import matplotlib.pyplot as plt
 import ray
 from ray.rllib.models import ModelCatalog
@@ -20,7 +22,8 @@ from ray.tune.registry import get_trainable_cls, register_env
 from experiments.rollout import *
 from experiments.shapley_values import (exact_shapley_values,
                                         monte_carlo_shapley_values)
-from rllib_env import CleanerWrapper, CustomModel
+from rllib_env import CleanerWrapper, CustomModel, ACT_SPACE, OBS_SIZE
+from ray.rllib.env.multi_agent_env import ENV_STATE
 
 # from experiments.plot import plot_shap_barchart, plot_shap_piechart
 
@@ -171,8 +174,31 @@ def run(args, parser):
             parser.error("the following arguments are required: --env")
         args.env = config.get("env")
     
+    n_agent = config["env_config"]["N_agent"]
     config["env_config"]["max_iters"] = args.steps
     config["env_config"]["map_size"] = 15
+
+    if args.run.upper() == "QMIX":
+        obs_space = Box(low=0.0, high=1.0, shape=(
+        OBS_SIZE, OBS_SIZE, 3), dtype=np.float32)
+        act_space = Discrete(ACT_SPACE)
+        obs_space = Tuple([
+            Dict({
+                "obs": obs_space,
+                ENV_STATE: obs_space
+            }) for _ in range(n_agent)
+        ])
+        act_space = Tuple([
+            act_space for _ in range(n_agent)
+        ])
+        grouping = {
+            "agents": [f'agent_{i}' for i in range(n_agent)],
+        }
+
+        def create_env_qmix(env_config): return CleanerWrapper(env_config).with_agent_groups(grouping,
+                                                                                             obs_space=obs_space,
+                                                                                             act_space=act_space)
+        register_env('cleaner_qmix', create_env_qmix)
 
     ray.init()
 
