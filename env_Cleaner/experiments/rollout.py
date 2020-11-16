@@ -169,7 +169,7 @@ def keep_going(steps, num_steps, episodes, num_episodes):
 
 
 def rollout(agent,
-            env_name,
+            env,
             num_steps,
             num_episodes=0,
             saver=RolloutSaver(),
@@ -183,7 +183,6 @@ def rollout(agent,
     policy_agent_mapping = default_policy_agent_mapping
 
     if hasattr(agent, "workers"):
-        env = agent.workers.local_worker().env
         multiagent = isinstance(env, MultiAgentEnv)
         if agent.workers.local_worker().multiagent:
             policy_agent_mapping = agent.config["multiagent"][
@@ -197,7 +196,6 @@ def rollout(agent,
             for p, m in policy_map.items()
         }
     else:
-        env = gym.make(env_name)
         multiagent = False
         use_lstm = {DEFAULT_POLICY_ID: False}
 

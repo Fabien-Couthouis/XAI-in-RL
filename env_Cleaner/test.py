@@ -24,7 +24,6 @@ from experiments.shapley_values import (exact_shapley_values,
                                         monte_carlo_shapley_values)
 from rllib_env import CleanerWrapper, CustomModel, ACT_SPACE, OBS_SIZE
 from ray.rllib.env.multi_agent_env import ENV_STATE
-
 # from experiments.plot import plot_shap_barchart, plot_shap_piechart
 
 
@@ -173,7 +172,7 @@ def run(args, parser):
         if not config.get("env"):
             parser.error("the following arguments are required: --env")
         args.env = config.get("env")
-    
+
     # n_agent = config["env_config"]["N_agent"]
     config["env_config"]["max_iters"] = args.steps
     config["env_config"]["map_size"] = 15
@@ -210,8 +209,7 @@ def run(args, parser):
     num_steps = args.steps
     num_episodes = args.episodes
 
-    env = agent.workers.local_worker().env
-    print("AGENT_ENV: ", env)
+    env = create_env(config["env_config"])
     with RolloutSaver(
             args.out,
             args.use_shelve,
@@ -231,8 +229,11 @@ def run(args, parser):
                 plt.show()
 
         else:
-            return rollout(agent, args.env, num_steps, num_episodes, saver,
+            return rollout(agent, env, num_steps, num_episodes, saver,
                            args.no_render, args.monitor)
+
+
+def create_env(config=None): return CleanerWrapper(env_config=config)
 
 
 if __name__ == "__main__":
@@ -242,8 +243,6 @@ if __name__ == "__main__":
         "my_model", CustomModel)
 
     # Register custom envs
-
-    def create_env(config=None): return CleanerWrapper(env_config=config)
 
     # Register custom envs
     register_env("cleaner", create_env)

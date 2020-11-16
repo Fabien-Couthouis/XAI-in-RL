@@ -1,0 +1,42 @@
+{
+  "env": "<class '__main__.CleanerWrapper'>",
+  "env_config": {
+    "N_agent": 3,
+    "map_size": 15,
+    "max_iters": 1000,
+    "render": false,
+    "seed": null,
+    "with_state": false
+  },
+  "multiagent": {
+    "policies": {
+      "policy_agent_0": [
+        null,
+        "Box(0.0, 1.0, (42, 42, 3), float32)",
+        "Discrete(4)",
+        {
+          "agent_id": 0
+        }
+      ],
+      "policy_agent_1": [
+        null,
+        "Box(0.0, 1.0, (42, 42, 3), float32)",
+        "Discrete(4)",
+        {
+          "agent_id": 1
+        }
+      ],
+      "policy_agent_2": [
+        null,
+        "Box(0.0, 1.0, (42, 42, 3), float32)",
+        "Discrete(4)",
+        {
+          "agent_id": 2
+        }
+      ]
+    },
+    "policy_mapping_fn": "<function policy_agent_mapping at 0x7f411bdd8d08>"
+  },
+  "num_gpus": 1,
+  "num_workers": 8
+}
