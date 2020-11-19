@@ -39,12 +39,14 @@ def rollout(env, arglist, trainers, considered_player=None, coalition=None, miss
 
             # for displaying
             if arglist.display:
-                time.sleep(0.1)
-                env.render()
+                env.render(mode='other')
+                # time.sleep(0.01)
+
             rewards.append(sum(rew_n[:-num_adversaries]))
             if rew_n[0] > 0:
                 # prey  got caught
                 goal_agents.append(env.winning_agent().name)
+                print(env.winning_agent().name)
             for i, rew in enumerate(rew_n):
                 agent_rewards[i].append(rew)
 
@@ -54,6 +56,7 @@ def rollout(env, arglist, trainers, considered_player=None, coalition=None, miss
                 total_agent_rewards.append(agent_rewards)
                 total_episode_rewards.append(rewards)
                 total_goal_agents.append(goal_agents)
+                # print(total_goal_agents)
                 break
 
     rollout_info = {"goal_agents": total_goal_agents,

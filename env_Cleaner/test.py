@@ -78,7 +78,7 @@ def create_parser(parser_creator=None):
         help="Wrap environment in gym Monitor to record video.")
     parser.add_argument(
         "--steps",
-        default=10000,
+        default=1000,
         type=int,
         help="Number of steps to roll out.")
     parser.add_argument("--out", default=None, help="Output filename.")

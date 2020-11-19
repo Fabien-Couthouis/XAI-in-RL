@@ -27,6 +27,8 @@ def parse_args():
                         default="maddpg", help="policy for good agents")
     parser.add_argument("--adv-policy", type=str,
                         default="ddpg", help="policy of adversaries")
+    parser.add_argument(
+        "--agent-speeds", nargs="+", default=[1.0, 1.0, 1.0, 1.3], help="Speed of agents (first are adversaries)")
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="learning rate for Adam optimizer")
@@ -205,9 +207,10 @@ def save_goal_agents(arglist, rollout_info):
 if __name__ == '__main__':
     arglist = parse_args()
     # Create environment
-    env = EnvWrapper(arglist.scenario, arglist.benchmark)
+    env = EnvWrapper(arglist.scenario, arglist.benchmark,
+                     agent_speeds=arglist.agent_speeds)
     with U.single_threaded_session():
-         # Create agent trainers
+        # Create agent trainers
         obs_shape_n = [env.observation_space[i].shape for i in range(env.n)]
         num_adversaries = min(env.n, arglist.num_adversaries)
         trainers = get_trainers(env, num_adversaries, obs_shape_n, arglist)
