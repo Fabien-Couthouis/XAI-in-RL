@@ -219,7 +219,7 @@ if __name__ == '__main__':
         # Load previous results, if necessary
         if arglist.load_dir == "":
             arglist.load_dir = arglist.save_dir
-        if arglist.display or arglist.restore_episode != 0 or arglist.benchmark:
+        if arglist.rollout or arglist.shapley_M or arglist.restore_episode != 0 or arglist.benchmark:
             print('Loading previous state...')
             U.load_state(arglist.load_dir)
 

@@ -9,7 +9,6 @@ AGENTS_COLORS = [[0.85, 0.35, 0.35], [0.25, 0.75, 0.95],
 
 class EnvWrapper(MultiAgentEnv):
     def __init__(self, scenario_name, benchmark=False, agent_speeds=None):
-        print("agent_speeds", type(agent_speeds), agent_speeds)
         scenario = scenarios.load(scenario_name + ".py").Scenario()
         # create world
         world = scenario.make_world()
@@ -93,8 +92,6 @@ class EnvWrapper(MultiAgentEnv):
 
         def is_collision(agent1, agent2):
             assert agent1.name != agent2.name
-            print(agent1.name, agent1.state.p_pos,
-                  agent2.name, agent2.state.p_pos)
             delta_pos = agent1.state.p_pos - agent2.state.p_pos
             dist = np.sqrt(np.sum(np.square(delta_pos)))
             dist_min = agent1.size + agent2.size

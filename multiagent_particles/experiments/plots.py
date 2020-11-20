@@ -68,6 +68,7 @@ def plot_shap_piechart(shapley_values: List[float], agent_names: List[str]):
 # def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
 def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
     # fig, ax = plt.subplots()
+    methods = ["noop" if m == "idle" else m for m in methods]
     data = {
         'Player': player_names,
         'Shapley value': shapley_values,
@@ -114,8 +115,8 @@ def compute_shapley_value(rewards_with: np.array, rewards_without: np.array) -> 
     # print("R WITH", rewards_with)
     # print("R WITHOUT", rewards_without)
 
-    d_rewards_with = discount_rewards(rewards_with, GAMMA).sum(axis=-1)
-    d_rewards_without = discount_rewards(rewards_without, GAMMA).sum(axis=-1)
+    # d_rewards_with = discount_rewards(rewards_with, GAMMA).sum(axis=-1)
+    # d_rewards_without = discount_rewards(rewards_without, GAMMA).sum(axis=-1)
     # print(d_rewards_with[10:15])
 
     # print("D WITH", d_rewards_with)
@@ -127,8 +128,8 @@ def compute_shapley_value(rewards_with: np.array, rewards_without: np.array) -> 
     #     d_rewards_without-d_rewards_without.mean())/d_rewards_without.std()
 
     # shapley_value = np.sum(rewards_with - rewards_without, axis=-1)
-    shapley_value = d_rewards_with.sum(
-        axis=-1) - d_rewards_without.sum(axis=-1)
+    shapley_value = rewards_with.sum(
+        axis=-1) - rewards_without.sum(axis=-1)
     # min_s = shapley_value.min()
     # max_s = shapley_value.max()
     # shapley_value = (shapley_value - min_s)/(max_s-min_s)
@@ -205,32 +206,12 @@ def plot_goal_agents_pp(folder_path: str, agent_names: List[str]):
 
 
 if __name__ == "__main__":
-    # Replace example values by yours! :)
-    # agent_names = ["agent1", "agent2", "agent3", "agent4"]
-    # model_names = ["model1", "model2", "model3", "model4"]
-    # agent_rewards = [[1, 2, 3, 4, 1], [28, 69, 45, 58, 7],
-    #                  [8, 9, 5, 8, 7], [8, 29, 18, 8, 7]]
-    # shapley_values = [3, 20, 50, 100]
 
-    # player_names = ['player1', "player1", 'player1', 'player1', 'player2',
-    #                 'player2', 'player2', 'player3', 'player3', 'player3']
-    # shapley_values_2 = [34, 38, 30, 32, 16, 15, 14, 25, 23, 25]
-    # methods = ['random', "random", 'idle', 'random_player', 'random',
-    #            'idle', 'random_player', 'random', 'idle', 'random_player']
-
-    # path_pp_models = r"multiagent_particles/experiments/saves"
-    # plot_model_rewards_pp(path_pp_models)
-
-    # path_pp_mc = r"multiagent_particles/experiments/rewards/exp2"
+    # path_pp_mc = r"rewards/exp2"
     # data = load_cat_plot_data_pp(path_pp_mc)
-    # print(data)
     # cat_plot(*data)
 
     plot_goal_agents_pp(r"goal_agents/exp2", [
                         "Predator 0", "Predator 1", "Predator 2"])
-
-    # plot_shap_barchart(shapley_values, agent_names)
-    # plot_shap_piechart(shapley_values, agent_names)
-    # cat_plot(player_names, shapley_values_2, methods)
 
     plt.show()

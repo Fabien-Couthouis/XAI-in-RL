@@ -20,19 +20,21 @@ def save_rewards(N, M, folder_name, agent_speeds):
 
 
 def save_goal_agents(N, folder_name, agent_speeds):
-    runs = ["run_10", "run_11", "run_12", "run_13", "run_14"]  #
+    runs = ["run_10", "run_11", "run_12", "run_13", "run_14"]
     for run in runs:
         fname = f"{folder_name}/{run}_goal_agents_{N}.csv"
 
         if not os.path.exists(fname):
-            command = f'python run.py --load-dir "saves/{run}/episode_200000/model" --exp-name {fname[:-4]} --save-dir {folder_name} --rollout --display --num-episodes {N} --agent-speeds'
+            command = f'python run.py --load-dir "saves/{run}/episode_200000/model" --exp-name {fname[:-4]} --save-dir {folder_name} --rollout --num-episodes {N} --agent-speeds'
             for speed in agent_speeds:
                 command += f" {speed}"
             subprocess.run(command, shell=True)
 
 
 if __name__ == "__main__":
-    # save_rewards(N=3, M=1000, folder_name="rewards/exp2",
-    #              agent_speeds=[0.2, 0.7, 1.3, 1.3])
-    save_goal_agents(10000, "goal_agents/exp2",
-                     agent_speeds=[0.1, 1.0, 3.0, 1.3])
+    SPEEDS_EXP1 = [1.0, 1.0, 1.0, 1.3]
+    SPEEDS_EXP2 = [0.2, 0.8, 2.0, 1.3]
+    save_rewards(N=1, M=1000, folder_name="rewards/exp1",
+                 agent_speeds=SPEEDS_EXP1)
+    # save_goal_agents(2000, "goal_agents/exp1",
+    #                  agent_speeds=SPEEDS_EXP2)
