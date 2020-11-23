@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 from typing import List
 
-GAMMA = 1.0
 plt.style.use('bmh')
 
 BARCHAR_TEXTPROPS = {"fontsize": 12, "weight": "bold"}
@@ -21,10 +20,11 @@ def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
         {agent_names[i]: [shapley_values[i]] for i in range(len(shapley_values))})
     ax = sns.barplot(data=data_df, orient="h")
 
-    ax.set_title("Contribution of each agent (Shapley values)",
+    ax.set_title("Shapley value for each agent",
                  BARCHAR_TEXTPROPS)
-    ax.set_xlabel('Agent names', BARCHAR_TEXTPROPS)
-    ax.set_ylabel("Shapley value", BARCHAR_TEXTPROPS)
+    ax.set_xlabel("Shapley value (contribution of each agent)",
+                  BARCHAR_TEXTPROPS)
+    ax.set_ylabel('Agent names', BARCHAR_TEXTPROPS)
     fig.tight_layout()
     return fig, ax
 
@@ -51,19 +51,6 @@ def plot_model_rewards_pp(folder_path: str):
     return fig, ax
 
 
-def plot_shap_piechart(shapley_values: List[float], agent_names: List[str]):
-    'Plot piechart: % contribution for each agent based on Shapley values '
-    values = [shapley_value/sum(shapley_values)
-              for shapley_value in shapley_values]
-    fig, ax = plt.subplots()
-    ax.pie(values, labels=agent_names, autopct='%1.1f%%',
-           startangle=90, textprops=PIECHART_TEXTPROPS)
-    # Equal aspect ratio ensures that pie is drawn as a circle.
-    ax.axis('equal')
-    fig.tight_layout()
-    return fig, ax
-
-
 # def cat_plot(shapley_values: List[List[float]], agent_names: List[str], method_names: List[str]):
 # def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
 def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
@@ -82,6 +69,7 @@ def cat_plot(player_names: List[str], shapley_values: List[float], methods: List
 
     g.set(xticks=[])
     g.set(xlabel='')
+    g.set(ylim=(-5, 20))
     axes = g.axes.flatten()
     player_names = sorted(list(set(data['Player'])))
     for ax, player_name in zip(axes, player_names):
@@ -93,39 +81,9 @@ def cat_plot(player_names: List[str], shapley_values: List[float], methods: List
     return ax
 
 
-def discount_rewards(rewards, gamma) -> np.ndarray:
-    'Returns rewards discounted by GAMMA factor'
-    discounted_rewards = np.zeros_like(rewards)
-    # print(discounted_rewards)
-    for r in range(len(rewards)):
-        R = 0
-        for t in reversed(range(0, len(rewards[r]))):
-            # print("rewards t", t, rewards[r][t])
-            R = R * gamma + rewards[r][t]
-            discounted_rewards[r][t] = R
-            # print("R", t, R)
-    return discounted_rewards
-
-
 def compute_shapley_value(rewards_with: np.array, rewards_without: np.array) -> float:
     'Compute marginal contributions and Shapley values from rewards on random coalitions with and without the considerd player'
     # Compute marginal contributions from rewards
-    # rewards_with = rewards_with[10:15]
-    # rewards_without = rewards_without[10:15]
-    # print("R WITH", rewards_with)
-    # print("R WITHOUT", rewards_without)
-
-    # d_rewards_with = discount_rewards(rewards_with, GAMMA).sum(axis=-1)
-    # d_rewards_without = discount_rewards(rewards_without, GAMMA).sum(axis=-1)
-    # print(d_rewards_with[10:15])
-
-    # print("D WITH", d_rewards_with)
-    # print("D WITHOUT", d_rewards_without)
-    # print("LESS", d_rewards_with-d_rewards_without)
-    # d_rewards_with = (d_rewards_with-d_rewards_with.mean()) / \
-    #     d_rewards_with.std()
-    # d_rewards_without = (
-    #     d_rewards_without-d_rewards_without.mean())/d_rewards_without.std()
 
     # shapley_value = np.sum(rewards_with - rewards_without, axis=-1)
     shapley_value = rewards_with.sum(
@@ -187,14 +145,32 @@ def plot_goal_agents_pp(folder_path: str, agent_names: List[str]):
     'Plot barchart: agent with corresponding shapley value'
     fig, ax = plt.subplots()
     all_files = [path for path in Path(folder_path).rglob('*.csv')]
+
+    dfs = [pd.read_csv(f, index_col=0, names=["Episode", "Reward"]+agent_names)[agent_names].sum().T.reset_index().assign(model=i)
+           for i, f in enumerate(all_files)]
+
+    df_c = pd.concat(dfs).rename(columns={0: "value"})
+    ax = sns.barplot(x="value", y="index", hue="model", data=df_c, palette="husl",
+                     orient="h", order=agent_names, estimator=sum)
+    # ax.set_title("Statistics for each agent",
+    #              BARCHAR_TEXTPROPS)
+    ax.set(xlabel="Number of times the prey get caught")
+    ax.set(ylabel="Agent")
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_goal_agents_pp_one(folder_path: str, agent_names: List[str]):
+    'Plot barchart: agent with corresponding shapley value (one bar)'
+    fig, ax = plt.subplots()
+    all_files = [path for path in Path(folder_path).rglob('*.csv')]
     # names = ["episode", "reward", "r1", "r2", "r3", "r4"]
 
     df = pd.concat((pd.read_csv(f, names=["Episode", "Reward"]+agent_names)
                     for f in all_files))
-    print(df.head())
     df_sum = df[agent_names].sum().reset_index().rename(
         columns={0: "value"})
-    print(df_sum)
 
     ax = sns.barplot(x="value", y="index", data=df_sum, palette="husl",
                      orient="h", order=agent_names, estimator=sum)
@@ -206,12 +182,18 @@ def plot_goal_agents_pp(folder_path: str, agent_names: List[str]):
 
 
 if __name__ == "__main__":
+    agent_names = ["Predator 0", "Predator 1", "Predator 2"]
+    path_pp_mc = r"rewards/exp1"
 
-    # path_pp_mc = r"rewards/exp2"
+    # data = load_cat_plot_data_pp(path_pp_mc)
+    # print(data)
+    # shapley_values = data[1]
+    # plot_shap_barchart(shapley_values[9:12], agent_names)
+
     # data = load_cat_plot_data_pp(path_pp_mc)
     # cat_plot(*data)
 
-    plot_goal_agents_pp(r"goal_agents/exp2", [
-                        "Predator 0", "Predator 1", "Predator 2"])
+    plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
+    plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
 
     plt.show()

@@ -34,7 +34,7 @@ def save_goal_agents(N, folder_name, agent_speeds):
 if __name__ == "__main__":
     SPEEDS_EXP1 = [1.0, 1.0, 1.0, 1.3]
     SPEEDS_EXP2 = [0.2, 0.8, 2.0, 1.3]
-    save_rewards(N=1, M=1000, folder_name="rewards/exp1",
-                 agent_speeds=SPEEDS_EXP1)
-    # save_goal_agents(2000, "goal_agents/exp1",
-    #                  agent_speeds=SPEEDS_EXP2)
+    # save_rewards(N=1, M=1000, folder_name="rewards/exp1",
+    #              agent_speeds=SPEEDS_EXP2)
+    save_goal_agents(2000, "goal_agents/exp2",
+                     agent_speeds=SPEEDS_EXP1)
