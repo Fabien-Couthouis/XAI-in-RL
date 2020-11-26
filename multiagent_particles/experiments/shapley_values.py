@@ -10,7 +10,6 @@ from utils import get_trainers, mlp_model
 from rollout import rollout
 
 DEBUG = False  # print debugging info if set to true
-GAMMA_LIST = [1, 0.99, 0.95, 0.9]  # discount factors
 
 
 def get_combinations(players):
