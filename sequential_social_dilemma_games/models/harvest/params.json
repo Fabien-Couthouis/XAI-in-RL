@@ -16,7 +16,7 @@
   "env": "harvest_env",
   "env_config": {
     "env_name": "harvest_env",
-    "func_create": "<ray.tune.suggest.variant_generator.function object at 0x7fa2def377f0>",
+    "func_create": "<ray.tune.suggest.variant_generator.function object at 0x7f9745168550>",
     "run": "A3C"
   },
   "gamma": 0.99,
@@ -81,7 +81,7 @@
         {}
       ]
     },
-    "policy_mapping_fn": "<ray.tune.suggest.variant_generator.function object at 0x7fa2def378d0>"
+    "policy_mapping_fn": "<ray.tune.suggest.variant_generator.function object at 0x7f97451685f8>"
   },
   "num_cpus_for_driver": 1,
   "num_cpus_per_worker": 0.5,
