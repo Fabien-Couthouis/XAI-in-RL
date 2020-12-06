@@ -234,8 +234,5 @@ def take_actions_for_coalition(env, agent, considered_player, state, mapping_cac
                     f"Value: {missing_agents_behaviour} for parameter missing_agents_bahaviour is not valid. Valid values are: \"random\" \"random_player_action\" or \"idle\".")
 
             actions_for_coalition[agent_id] = action
-    
-    print("COALITION: ", coalition)
-    print("ACTIONS: ", actions_for_coalition)
 
     return actions_for_coalition

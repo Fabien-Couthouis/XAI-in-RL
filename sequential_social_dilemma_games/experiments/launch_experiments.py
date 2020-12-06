@@ -6,7 +6,7 @@ from rollout import rollout
 
 def save_rewards(N, M, folder_name):
     runs = ["run_1"]
-    missing_agents_behaviours = ["idle"]
+    missing_agents_behaviours = ["idle", "random", "random_player_action"]
     processes = []
     for n in range(N):
         for run in runs:
