@@ -37,10 +37,10 @@ def monte_carlo_shapley_values(args, agent, config, n_players):
     """
 
     print("Starting Shapley value estimation on:", n_players,
-          " n_random_coalitions=", args.shapley_M)
+          " n_random_coalitions=", args.shapley_M, " missing agents behaviour=", args.missing_agents_behaviour)
 
     shapley_values = []
-    players_ids = list(range(n_players))
+    players_ids = [f"agent-{i}" for i in range(n_players)]
     for player_id in players_ids:
         print(f"Starting computation for player {player_id}...")
         # Get all possible combinations with and without the current player

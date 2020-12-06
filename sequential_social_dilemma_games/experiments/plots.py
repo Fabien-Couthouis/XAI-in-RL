@@ -79,7 +79,7 @@ def cat_plot(player_names: List[str], shapley_values: List[float], methods: List
     return ax
 
 
-def compute_shapley_value(rewards_with: np.array, rewards_without: np.array) -> float:
+def compute_shapley_value(rewards_with: np.ndarray, rewards_without: np.ndarray) -> float:
     'Compute marginal contributions and Shapley values from rewards on random coalitions with and without the considerd player'
     # Compute marginal contributions from rewards
 
@@ -87,6 +87,7 @@ def compute_shapley_value(rewards_with: np.array, rewards_without: np.array) -> 
     shapley_value = rewards_with.sum(
         axis=-1) - rewards_without.sum(axis=-1)
     shapley_value = shapley_value.mean()
+    
 
 
     return shapley_value
@@ -124,16 +125,15 @@ def load_cat_plot_data(path: str):
 
 if __name__ == "__main__":
     agent_names = [f"Agent {i}" for i in range(6)]
-    path_pp_mc = r"rewards/exp1"
+    path_pp_mc = r"rewards"
 
-    # data = load_cat_plot_data(path_pp_mc)
-    # # print(data)
+    data = load_cat_plot_data(path_pp_mc)
     # shapley_values = data[1]
     # plot_shap_barchart(shapley_values, agent_names)
 
-    # cat_plot(*data)
+    cat_plot(*data)
 
-    plot_model_rewards("models/harvest")
+    #plot_model_rewards("rewards")
 
 
     plt.show()

@@ -129,7 +129,11 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
                 print("render")
                 env.render()
             if multiagent:
-                action = take_action(env, agent, state, mapping_cache, use_lstm,
+                if args.shapley_M is not None:
+                    action = take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, 
+                    policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour)
+                else:
+                    action = take_action(env, agent, state, mapping_cache, use_lstm,
                                      policy_agent_mapping, state_init)
 
             else:
@@ -200,7 +204,7 @@ def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping
     return action_dict
 
 
-def take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, coalition, missing_agents_bahaviour):
+def take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, coalition, missing_agents_behaviour):
     'Return actions where each agent in coalition follow the policy, others play at random if replace_missing_players=="random" or do not move if replace_missing_players=="idle'
     actions = take_action(env, agent, state, mapping_cache,
                           use_lstm, policy_agent_mapping, state_init)
@@ -212,23 +216,26 @@ def take_actions_for_coalition(env, agent, considered_player, state, mapping_cac
                              considered_player]
     for agent_id in actions.keys():
         if agent_id not in coalition:
-            if missing_agents_bahaviour == "random_player_action":
+            if missing_agents_behaviour == "random_player_action":
                 # Action from another random player
                 random_player = random.choice(agents_without_player)
                 action = actions[random_player]
 
-            elif missing_agents_bahaviour == "random":
+            elif missing_agents_behaviour == "random":
                 # Random action
                 action = np.random.randint(env.action_space)
 
-            elif missing_agents_bahaviour == "idle":
+            elif missing_agents_behaviour == "idle":
                 # Idle action
-                action = env.ACTIONS["STAY"]
+                action = 4 #env.ACTIONS["STAY"]
 
             else:
                 raise ValueError(
-                    f"Value: {missing_agents_bahaviour} for parameter missing_agents_bahaviour is not valid. Valid values are: \"random\" \"random_player_action\" or \"idle\".")
+                    f"Value: {missing_agents_behaviour} for parameter missing_agents_bahaviour is not valid. Valid values are: \"random\" \"random_player_action\" or \"idle\".")
 
             actions_for_coalition[agent_id] = action
+    
+    print("COALITION: ", coalition)
+    print("ACTIONS: ", actions_for_coalition)
 
     return actions_for_coalition
