@@ -223,7 +223,7 @@ def take_actions_for_coalition(env, agent, considered_player, state, mapping_cac
 
             elif missing_agents_behaviour == "random":
                 # Random action
-                action = env.action_space.sample()
+                action = np.random.randint(0, 7)
 
             elif missing_agents_behaviour == "idle":
                 # Idle action
