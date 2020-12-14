@@ -99,33 +99,3 @@ def take_actions_for_coalition(trainers, obs_n, considered_player, coalition, en
                 raise ValueError(
                     f"Value: {missing_agents_bahaviour} for parameter missing_agents_bahaviour is not valid. Valid values are: \"random\" \"random_player\" or \"idle\".")
     return actions_for_coalition
-
-
-def take_actions_for_coalition_observations(trainers, obs_n, considered_player, coalition, env, missing_agents_bahaviour="random_player", num_adversaries=1):
-    'Return actions where each agent in coalition follow the policy, others play at random'
-    if coalition is None or considered_player is None:
-        return take_action(trainers, obs_n)
-
-    if missing_agents_bahaviour == "idle":
-        idle_actions = env.idle_actions()
-    if missing_agents_bahaviour == "random":
-        random_actions = env.random_actions()
-
-    n_good_agents = min(env.n, env.n-num_adversaries)
-    agents_without_player = [agent_id for agent_id in range(
-        n_good_agents) if agent_id != considered_player]
-    for agent_id in range(n_good_agents):
-        if agent_id not in coalition:
-            # take dummy action
-            if missing_agents_bahaviour == "random_player":
-                random_agent = random.choice(agents_without_player)
-                random_agent_action = actions[random_agent]
-                actions_for_coalition[agent_id] = random_agent_action
-            elif missing_agents_bahaviour == "idle":
-                actions_for_coalition[agent_id] = idle_actions[agent_id]
-            elif missing_agents_bahaviour == "random":
-                actions_for_coalition[agent_id] = random_actions[agent_id]
-            else:
-                raise ValueError(
-                    f"Value: {missing_agents_bahaviour} for parameter missing_agents_bahaviour is not valid. Valid values are: \"random\" \"random_player\" or \"idle\".")
-    return actions_for_coalition

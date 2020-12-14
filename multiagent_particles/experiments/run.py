@@ -7,7 +7,7 @@ import csv
 import maddpg.common.tf_util as U
 from env_wrapper import EnvWrapper
 from utils import get_trainers, mlp_model
-from shapley_values import monte_carlo_shapley_estimation
+from shapley_values import monte_carlo_shapley_estimation, shapley_values
 from rollout import rollout
 
 
@@ -57,6 +57,9 @@ def parse_args():
                         help="directory where benchmark data is saved")
     parser.add_argument("--shapley-M", type=int, default=None,
                         help="compute or not shapley values with given number of simulation episodes (M)")
+    parser.add_argument("--true-shapley", action="store_true",
+                        default=False, help="Do not use Monte Carlo approximations")
+
     parser.add_argument("--missing-agents-behaviour", type=str, default="random_player",
                         help="behaviour of agent not in the coalition: random_player (take a random player mode from a from in the coalition) or random (random move) or idle (do not move)")
     parser.add_argument("--rollout", action="store_true", default=False)
@@ -223,7 +226,9 @@ if __name__ == '__main__':
             print('Loading previous state...')
             U.load_state(arglist.load_dir)
 
-        if arglist.shapley_M is not None:
+        if arglist.true_shapley:
+            shapley_values(env, arglist, trainers)
+        elif arglist.shapley_M is not None:
             monte_carlo_shapley_estimation(
                 env, arglist, trainers)
         elif arglist.rollout:

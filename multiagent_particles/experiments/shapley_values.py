@@ -9,8 +9,6 @@ from utils import get_trainers, mlp_model
 
 from rollout import rollout
 
-DEBUG = False  # print debugging info if set to true
-
 
 def get_combinations(players):
     'Get all possible coalitions between features'
@@ -96,47 +94,40 @@ def save_rollout_info(arglist, feature, m, rollout_info_with, rollout_info_witho
         writer.writerow(row)
 
 
-# def get_marginal_contributions(env, features, num_episodes, behaviour_nets):
-#     'Get mean reward for each agent for each coalitions '
-#     coalition_values = dict()
-#     for coalition in get_combinations(features):
-#         total_rewards = rollout(
-#                 arglist, coalition=coalition, missing_agents_bahaviour="random_player")
-#         coalition_values[str(coalition)] = round(mean(total_rewards), 2)
-#     if DEBUG:
-#         print("Coalition values: ", coalition_values)
-#     return coalition_values
+def get_marginal_contributions(env, features, arglist, trainers):
+    'Get mean reward for each agent for each coalitions '
+    coalition_values = dict()
+    for coalition in get_combinations(features):
+        total_rewards = rollout(env,
+                                arglist, trainers, coalition=coalition, missing_agents_bahaviour=arglist.missing_agents_bahaviour)
+        coalition_values[str(coalition)] = round(mean(total_rewards), 2)
+        save_rollout_info(arglist, coalition,
+                          arglist.shapley_M, total_rewards, 0)
+    return coalition_values
 
 
-# def shapley_values(env, behaviour_nets, num_episodes=10):
-#     'Naive implementation (not optimized at all)'
-#     agents_ids = range(env.n)
-#     coalition_values = get_marginal_contributions(
-#         env, agents_ids, num_episodes, behaviour_nets)
-#     shapley_values = []
-#     for agent_id in agents_ids:
-#         if DEBUG:
-#             print("Computing shap value for agent: ", agent_id)
-#         shapley_value = 0
-#         for permutation in permutations(agents_ids):
-#             to_remove = []
-#             if DEBUG:
-#                 print("permutation ", permutation)
-#             for i, x in enumerate(permutation):
-#                 if x == agent_id:
-#                     coalition = sorted(permutation[:i+1])
-#                     if DEBUG:
-#                         print("coalition", coalition)
-#                     shapley_value += coalition_values[str(coalition)]
+def shapley_values(env, arglist, trainers):
+    'Naive implementation (not optimized at all)'
+    num_good = min(env.n, env.n-arglist.num_adversaries)
+    agents_ids = range(num_good)
+    coalition_values = get_marginal_contributions(
+        env, agents_ids, arglist, trainers)
+    shapley_values = []
+    for agent_id in agents_ids:
+        shapley_value = 0
+        for permutation in permutations(agents_ids):
+            to_remove = []
+            for i, x in enumerate(permutation):
+                if x == agent_id:
+                    coalition = sorted(permutation[:i+1])
+                    shapley_value += coalition_values[str(coalition)]
 
-#                     if len(to_remove) > 0:
-#                         to_remove = str(sorted(to_remove))
-#                         shapley_value -= coalition_values[to_remove]
-#                         if DEBUG:
-#                             print("to remove ", to_remove)
-#                     break
-#                 else:
-#                     to_remove.append(x)
-#         shapley_values.append(shapley_value)
+                    if len(to_remove) > 0:
+                        to_remove = str(sorted(to_remove))
+                        shapley_value -= coalition_values[to_remove]
+                    break
+                else:
+                    to_remove.append(x)
+        shapley_values.append(shapley_value)
 
-#     return np.divide(shapley_values, np.math.factorial(env.get_num_of_agents()))
+    return np.divide(shapley_values, np.math.factorial(env.get_num_of_agents()))

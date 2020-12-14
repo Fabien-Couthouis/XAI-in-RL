@@ -87,8 +87,6 @@ def compute_shapley_value(rewards_with: np.ndarray, rewards_without: np.ndarray)
     shapley_value = rewards_with.sum(
         axis=-1) - rewards_without.sum(axis=-1)
     shapley_value = shapley_value.mean()
-    
-
 
     return shapley_value
 
@@ -97,7 +95,7 @@ def load_cat_plot_data(path: str):
     all_files = [p for p in Path(path).rglob('*.csv')]
     print(Path(path))
 
-    names = ["player", "episode", "method","rewards_with", "rewards_without"]
+    names = ["player", "episode", "method", "rewards_with", "rewards_without"]
     player_names_list = []
     methods_list = []
     shapley_values = []
@@ -121,19 +119,19 @@ def load_cat_plot_data(path: str):
     return player_names_list, shapley_values, methods_list
 
 
-
-
 if __name__ == "__main__":
     agent_names = [f"Agent {i}" for i in range(6)]
     path_pp_mc = r"rewards"
 
     data = load_cat_plot_data(path_pp_mc)
-    # shapley_values = data[1]
-    # plot_shap_barchart(shapley_values, agent_names)
+    shapley_values = data[1]
+    print(data)
+    plot_shap_barchart(shapley_values[-6:], agent_names)
+    plot_shap_barchart(shapley_values[:6], agent_names)
+    plot_shap_barchart(shapley_values[6:12], agent_names)
 
-    cat_plot(*data)
+    # cat_plot(*data)
 
-    #plot_model_rewards("rewards")
-
+    # plot_model_rewards("rewards")
 
     plt.show()

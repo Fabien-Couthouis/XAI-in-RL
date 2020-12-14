@@ -57,7 +57,7 @@ def cat_plot(player_names: List[str], shapley_values: List[float], methods: List
     # fig, ax = plt.subplots()
     methods = ["noop" if m == "idle" else m for m in methods]
     data = {
-        'Player': player_names,
+        'Player': [f"Predator {name}" for name in player_names],
         'Shapley value': shapley_values,
         'Method_idx': methods,
         'Method': methods.copy()
@@ -110,7 +110,7 @@ def compute_shapley_value(rewards_with: np.array, rewards_without: np.array) -> 
     return shapley_value
 
 
-def load_cat_plot_data_pp(path: str):
+def load_cat_plot_data_pp(path: str, M: int = None):
     all_files = [p for p in Path(path).rglob('*.csv')]
     print(Path(path))
 
@@ -121,12 +121,15 @@ def load_cat_plot_data_pp(path: str):
     shapley_values = []
     for f in all_files:
         df = pd.read_csv(f, names=names)
+
         player_names = df["player"].unique()
         methods = df["method"].unique()
         for method in methods:
             for player in player_names:
                 df_sel = df[df['player'] == player]
                 df_sel = df_sel[df_sel['method'] == method]
+                if M is not None:
+                    df_sel = df_sel.sample(n=M)
                 r_with = np.vstack(df_sel['total_good_agents_rewards_with'].apply(
                     eval).apply(np.array).values)
                 r_without = np.vstack(df_sel['total_good_agents_rewards_without'].apply(
@@ -183,17 +186,17 @@ def plot_goal_agents_pp_one(folder_path: str, agent_names: List[str]):
 
 if __name__ == "__main__":
     agent_names = ["Predator 0", "Predator 1", "Predator 2"]
-    path_pp_mc = r"rewards/exp1"
+    path_pp_mc = r"rewards/exp2"
 
     # data = load_cat_plot_data_pp(path_pp_mc)
     # print(data)
     # shapley_values = data[1]
     # plot_shap_barchart(shapley_values[9:12], agent_names)
 
-    # data = load_cat_plot_data_pp(path_pp_mc)
-    # cat_plot(*data)
+    data = load_cat_plot_data_pp(path_pp_mc, M=50)
+    cat_plot(*data)
 
-    plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
-    plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
+    # plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
+    # plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
 
     plt.show()
