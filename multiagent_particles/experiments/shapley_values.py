@@ -13,7 +13,7 @@ from rollout import rollout
 def get_combinations(players):
     'Get all possible coalitions between features'
     combinations_list = []
-    for i in range(1, len(players)+1):
+    for i in range(0, len(players)+1):
         oc = combinations(players, i)
         for c in oc:
             combinations_list.append(list(c))
@@ -77,15 +77,6 @@ def monte_carlo_shapley_estimation(env, arglist, trainers):
 def save_rollout_info(arglist, feature, m, rollout_info_with, rollout_info_without):
     'Keep track of marginal contributions in csv file while computing shapley values'
     file_name = f"{arglist.save_dir}/{arglist.exp_name}.csv"
-    # rewards_with = np.mean(rollout_info_with["episode_rewards"], axis=0)
-    # discounted_rewards_with = []
-    # rewards_without = np.mean(rollout_info_without["episode_rewards"], axis=0)
-    # discounted_rewards_without = []
-    # for gamma in GAMMA_LIST:
-    #     discounted_rewards_with.append(
-    #         np.mean(discount_rewards(rewards_with, gamma)))
-    #     discounted_rewards_without.append(np.mean(
-    #         discount_rewards(rewards_without, gamma)))
     with open(file_name, "a", newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
         row = [feature, m, arglist.missing_agents_behaviour]
@@ -94,15 +85,28 @@ def save_rollout_info(arglist, feature, m, rollout_info_with, rollout_info_witho
         writer.writerow(row)
 
 
+def save_marginal_contribution(arglist, coalition, n, coalition_value):
+    'Keep track of marginal contributions in csv file while computing shapley values'
+    file_name = f"{arglist.save_dir}/{arglist.exp_name}.csv"
+    with open(file_name, "a", newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=",")
+        row = [coalition, n, arglist.missing_agents_behaviour, coalition_value]
+        writer.writerow(row)
+
+
 def get_marginal_contributions(env, features, arglist, trainers):
     'Get mean reward for each agent for each coalitions '
     coalition_values = dict()
     for coalition in get_combinations(features):
-        total_rewards = rollout(env,
-                                arglist, trainers, coalition=coalition, missing_agents_bahaviour=arglist.missing_agents_bahaviour)
-        coalition_values[str(coalition)] = round(mean(total_rewards), 2)
-        save_rollout_info(arglist, coalition,
-                          arglist.shapley_M, total_rewards, 0)
+        rollout_info = rollout(env,
+                               arglist, trainers, coalition=coalition, missing_agents_bahaviour=arglist.missing_agents_behaviour)
+        episode_rewards = rollout_info['episode_rewards']
+        total_rewards = [sum(rewards) for rewards in episode_rewards]
+        coalition_value = round(mean(total_rewards), 2)
+
+        coalition_values[str(coalition)] = coalition_value
+        save_marginal_contribution(arglist, coalition,
+                                   arglist.shapley_M, coalition_value)
     return coalition_values
 
 
@@ -114,20 +118,26 @@ def shapley_values(env, arglist, trainers):
         env, agents_ids, arglist, trainers)
     shapley_values = []
     for agent_id in agents_ids:
+        print("agent: ", agent_id)
         shapley_value = 0
         for permutation in permutations(agents_ids):
             to_remove = []
+            print("permutation", permutation)
             for i, x in enumerate(permutation):
                 if x == agent_id:
                     coalition = sorted(permutation[:i+1])
+                    print("coalition:", coalition)
                     shapley_value += coalition_values[str(coalition)]
 
-                    if len(to_remove) > 0:
-                        to_remove = str(sorted(to_remove))
-                        shapley_value -= coalition_values[to_remove]
+                    to_remove = str(sorted(to_remove))
+                    print("to_remove:", to_remove)
+
+                    shapley_value -= coalition_values[to_remove]
                     break
                 else:
                     to_remove.append(x)
         shapley_values.append(shapley_value)
 
-    return np.divide(shapley_values, np.math.factorial(env.get_num_of_agents()))
+    values = np.divide(shapley_values, np.math.factorial(num_good))
+    print(values)
+    return values
