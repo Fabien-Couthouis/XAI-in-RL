@@ -1,11 +1,14 @@
+from collections import defaultdict
+import os
+import pickle
+from itertools import permutations
+from pathlib import Path
+from typing import List
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import pickle
-import os
-from pathlib import Path
-from typing import List
 
 plt.style.use('bmh')
 
@@ -55,7 +58,6 @@ def plot_model_rewards_pp(folder_path: str):
 # def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
 def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
     # fig, ax = plt.subplots()
-    methods = ["noop" if m == "idle" else m for m in methods]
     data = {
         'Player': [f"Predator {name}" for name in player_names],
         'Shapley value': shapley_values,
@@ -141,7 +143,48 @@ def load_cat_plot_data_pp(path: str, M: int = None):
                 player_names_list.append(player)
                 methods_list.append(method)
                 shapley_values.append(shapley_value)
+
+    methods_list = ["noop" if m == "idle" else m for m in methods_list]
+
     return player_names_list, shapley_values, methods_list
+
+
+def load_cat_plot_data_pp_true(path: str):
+    all_files = [p for p in Path(path).rglob('*.csv')]
+    print(Path(path))
+
+    names = ["coalition", "n", "method", "value"]
+    methods_list = []
+    shapley_values = []
+    players_list = []
+    for f in all_files:
+        df = pd.read_csv(f, names=names)
+        players = eval(df.iloc[-1]['coalition'])
+        for player in players:
+            shapley_value = 0
+            for permutation in permutations(players):
+                to_remove = []
+                for i, x in enumerate(permutation):
+                    if x == player:
+                        coalition = sorted(permutation[:i+1])
+                        shapley_value += df[df['coalition'] ==
+                                            str(coalition)]["value"].values[0]
+                        to_remove = str(sorted(to_remove))
+                        shapley_value -= df[df['coalition']
+                                            == to_remove]["value"].values[0]
+                        break
+                    else:
+                        to_remove.append(x)
+
+            shapley_value /= np.math.factorial(len(players))
+            shapley_values.append(shapley_value)
+            methods_list.append(df.iloc[0]["method"])
+        players_list.extend(players)
+
+    for i in range(len(methods_list)):
+        methods_list[i] += "_true"
+        methods_list[i] = methods_list[i].replace("idle", "noop")
+    return players_list, shapley_values, methods_list
 
 
 def plot_goal_agents_pp(folder_path: str, agent_names: List[str]):
@@ -184,16 +227,56 @@ def plot_goal_agents_pp_one(folder_path: str, agent_names: List[str]):
     return fig, ax
 
 
+# def plot_M_graph(path_pp_mc, path_pp_true, M_list):
+#     fig, ax = plt.subplots()
+#     true_data = load_cat_plot_data_pp_true(path_pp_mc_true)
+#     true_shapley = np.asarray(true_data[1])
+
+#     shapley_diff = []
+#     for M in M_list:
+#         mc_data = load_cat_plot_data_pp(path_pp_mc, M=M)
+#         mc_shapley = np.asarray(mc_data[1])
+#         shapley_diff.extend((np.absolute(true_shapley - mc_shapley)).tolist())
+
+#     data = pd.DataFrame({
+#         'Player': [f"Predator {name}" for name in true_data[0]]*len(M_list),
+#         'Shapley_diff': shapley_diff,
+#         'M': M_list*len(true_data[0]),
+#         'Method': mc_data[2]*len(M_list)
+#     })
+#     data = data[(data["Method"] == "noop") & (data["Player"] == "Predator 1")]
+
+#     data = data.groupby(['Method', 'Player', 'M']).mean()  # .reset_index()
+#     print(data)
+
+#     ax = sns.lineplot(data=data, x="M",
+#                       y="Shapley_diff")
+#     # MSE between real Shapley value and estimated Shapley value
+#     fig.tight_layout()
+#     return fig, ax
+
+
 if __name__ == "__main__":
     agent_names = ["Predator 0", "Predator 1", "Predator 2"]
-    path_pp_mc = r"rewards/exp2"
+    path_pp_mc = r"rewards/exp1"
+
+    path_pp_mc_true = r"rewards/true-shap-exp1"
 
     # data = load_cat_plot_data_pp(path_pp_mc)
     # print(data)
     # shapley_values = data[1]
     # plot_shap_barchart(shapley_values[9:12], agent_names)
 
-    data = load_cat_plot_data_pp(path_pp_mc, M=50)
+    data = load_cat_plot_data_pp(path_pp_mc)
+
+    # cat_plot(*data)
+
+    data_true = load_cat_plot_data_pp_true(path_pp_mc_true)
+
+    # Add true shapley value to MC approximation
+    for i in range(len(data_true)):
+        data[i].extend(data_true[i])
+
     cat_plot(*data)
 
     # plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
