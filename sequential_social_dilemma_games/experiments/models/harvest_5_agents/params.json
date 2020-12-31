@@ -1,0 +1,119 @@
+{
+  "batch_mode": "truncate_episodes",
+  "callbacks": {
+    "on_episode_end": null,
+    "on_episode_start": null,
+    "on_episode_step": null,
+    "on_sample_end": null,
+    "on_train_result": null
+  },
+  "clip_actions": true,
+  "clip_rewards": null,
+  "collect_metrics_timeout": 180,
+  "compress_observations": false,
+  "custom_resources_per_worker": {},
+  "entropy_coeff": -0.000687,
+  "env": "harvest_env",
+  "env_config": {
+    "env_name": "harvest_env",
+    "func_create": "<ray.tune.suggest.variant_generator.function object at 0x7f34e90d61d0>",
+    "run": "A3C"
+  },
+  "gamma": 0.99,
+  "grad_clip": 40.0,
+  "horizon": 1000,
+  "input": "sampler",
+  "input_evaluation": null,
+  "lambda": 1.0,
+  "local_evaluator_tf_session_args": {
+    "inter_op_parallelism_threads": 8,
+    "intra_op_parallelism_threads": 8
+  },
+  "log_level": "INFO",
+  "lr": 0.0001,
+  "lr_schedule": [
+    [
+      0,
+      0.00136
+    ],
+    [
+      20000000,
+      2.8e-05
+    ]
+  ],
+  "min_iter_time_s": 5,
+  "model": {
+    "custom_model": "conv_to_fc_net",
+    "lstm_cell_size": 128,
+    "use_lstm": true
+  },
+  "monitor": false,
+  "multiagent": {
+    "policy_graphs": {
+      "agent-0": [
+        "<class 'ray.rllib.agents.ppo.ppo_policy_graph.PPOPolicyGraph'>",
+        "Box(15, 15, 3)",
+        "Discrete(8)",
+        {}
+      ],
+      "agent-1": [
+        "<class 'ray.rllib.agents.ppo.ppo_policy_graph.PPOPolicyGraph'>",
+        "Box(15, 15, 3)",
+        "Discrete(8)",
+        {}
+      ],
+      "agent-2": [
+        "<class 'ray.rllib.agents.ppo.ppo_policy_graph.PPOPolicyGraph'>",
+        "Box(15, 15, 3)",
+        "Discrete(8)",
+        {}
+      ],
+      "agent-3": [
+        "<class 'ray.rllib.agents.ppo.ppo_policy_graph.PPOPolicyGraph'>",
+        "Box(15, 15, 3)",
+        "Discrete(8)",
+        {}
+      ],
+      "agent-4": [
+        "<class 'ray.rllib.agents.ppo.ppo_policy_graph.PPOPolicyGraph'>",
+        "Box(15, 15, 3)",
+        "Discrete(8)",
+        {}
+      ]
+    },
+    "policy_mapping_fn": "<ray.tune.suggest.variant_generator.function object at 0x7f34e87bbb50>"
+  },
+  "num_cpus_for_driver": 1,
+  "num_cpus_per_worker": 0.5,
+  "num_envs_per_worker": 1,
+  "num_gpus": 0,
+  "num_gpus_per_worker": 0,
+  "num_workers": 6,
+  "observation_filter": "NoFilter",
+  "optimizer": {},
+  "output": null,
+  "output_compress_columns": [
+    "obs",
+    "new_obs"
+  ],
+  "output_max_file_size": 67108864,
+  "preprocessor_pref": "deepmind",
+  "sample_async": true,
+  "sample_batch_size": 10,
+  "synchronize_filters": true,
+  "tf_session_args": {
+    "allow_soft_placement": true,
+    "device_count": {
+      "CPU": 1
+    },
+    "gpu_options": {
+      "allow_growth": true
+    },
+    "inter_op_parallelism_threads": 2,
+    "intra_op_parallelism_threads": 2,
+    "log_device_placement": false
+  },
+  "train_batch_size": 30000,
+  "use_pytorch": false,
+  "vf_loss_coeff": 0.5
+}
