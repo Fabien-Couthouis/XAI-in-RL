@@ -49,9 +49,9 @@ def monte_carlo_shapley_estimation(env, arglist, trainers):
             coalition_without_player = [
                 player for player in coalition_with_player if player != considered_player]
             rollout_info_with = rollout(env,
-                                        arglist, trainers, considered_player, coalition_with_player, arglist.missing_agents_behaviour)
+                                        arglist, trainers, coalition_with_player, arglist.missing_agents_behaviour)
             rollout_info_without = rollout(env,
-                                           arglist, trainers, considered_player, coalition_without_player, arglist.missing_agents_behaviour)
+                                           arglist, trainers, coalition_without_player, arglist.missing_agents_behaviour)
 
             values_with_player = np.sum(
                 rollout_info_with["episode_rewards"], axis=-1)
@@ -100,13 +100,13 @@ def get_marginal_contributions(env, features, arglist, trainers):
     for coalition in get_combinations(features):
         rollout_info = rollout(env,
                                arglist, trainers, coalition=coalition, missing_agents_bahaviour=arglist.missing_agents_behaviour)
-        episode_rewards = rollout_info['episode_rewards']
-        total_rewards = [sum(rewards) for rewards in episode_rewards]
-        coalition_value = round(mean(total_rewards), 2)
+        episode_rewards = np.sum(rollout_info["episode_rewards"], axis=-1)
+        # total_rewards = [sum(rewards) for rewards in episode_rewards]
+        coalition_value = round(np.mean(episode_rewards), 2)
 
         coalition_values[str(coalition)] = coalition_value
         save_marginal_contribution(arglist, coalition,
-                                   arglist.shapley_M, coalition_value)
+                                   arglist.num_episodes, coalition_value)
     return coalition_values
 
 
@@ -118,20 +118,14 @@ def shapley_values(env, arglist, trainers):
         env, agents_ids, arglist, trainers)
     shapley_values = []
     for agent_id in agents_ids:
-        print("agent: ", agent_id)
         shapley_value = 0
         for permutation in permutations(agents_ids):
             to_remove = []
-            print("permutation", permutation)
             for i, x in enumerate(permutation):
                 if x == agent_id:
                     coalition = sorted(permutation[:i+1])
-                    print("coalition:", coalition)
                     shapley_value += coalition_values[str(coalition)]
-
                     to_remove = str(sorted(to_remove))
-                    print("to_remove:", to_remove)
-
                     shapley_value -= coalition_values[to_remove]
                     break
                 else:

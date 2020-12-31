@@ -10,7 +10,7 @@ from env_wrapper import EnvWrapper
 from utils import get_trainers, mlp_model
 
 
-def rollout(env, arglist, trainers, considered_player=None, coalition=None, missing_agents_bahaviour="random_player"):
+def rollout(env, arglist, trainers, coalition=None, missing_agents_bahaviour="random_player"):
     'Play simulations'
     num_adversaries = min(env.n, arglist.num_adversaries)
 
@@ -25,7 +25,7 @@ def rollout(env, arglist, trainers, considered_player=None, coalition=None, miss
         while True:
             # get action
             action_n = take_actions_for_coalition(
-                trainers, obs_n, considered_player, coalition, env, missing_agents_bahaviour, num_adversaries)
+                trainers, obs_n, coalition, env, missing_agents_bahaviour, num_adversaries)
 
             # environment step
             obs_n, rew_n, done_n, _ = env.step(action_n)
@@ -69,10 +69,10 @@ def take_action(trainers, obs_n):
     return action_n
 
 
-def take_actions_for_coalition(trainers, obs_n, considered_player, coalition, env, missing_agents_bahaviour="random_player", num_adversaries=1):
+def take_actions_for_coalition(trainers, obs_n, coalition, env, missing_agents_bahaviour="idle", num_adversaries=1):
     'Return actions where each agent in coalition follow the policy, others play at random'
     actions = take_action(trainers, obs_n)
-    if coalition is None or considered_player is None:
+    if coalition is None:
         return actions
 
     actions_for_coalition = actions.copy()
@@ -82,13 +82,13 @@ def take_actions_for_coalition(trainers, obs_n, considered_player, coalition, en
         random_actions = env.random_actions()
 
     n_good_agents = min(env.n, env.n-num_adversaries)
-    agents_without_player = [agent_id for agent_id in range(
-        n_good_agents) if agent_id != considered_player]
     for agent_id in range(n_good_agents):
         if agent_id not in coalition:
+            other_players = [agent for agent in range(
+                n_good_agents) if agent != agent_id]
             # take dummy action
             if missing_agents_bahaviour == "random_player":
-                random_agent = random.choice(agents_without_player)
+                random_agent = random.choice(other_players)
                 random_agent_action = actions[random_agent]
                 actions_for_coalition[agent_id] = random_agent_action
             elif missing_agents_bahaviour == "idle":
