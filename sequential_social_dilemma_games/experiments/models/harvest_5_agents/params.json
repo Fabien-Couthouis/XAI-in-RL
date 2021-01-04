@@ -16,7 +16,7 @@
   "env": "harvest_env",
   "env_config": {
     "env_name": "harvest_env",
-    "func_create": "<ray.tune.suggest.variant_generator.function object at 0x7f34e90d61d0>",
+    "func_create": "<ray.tune.suggest.variant_generator.function object at 0x7f530853ac90>",
     "run": "A3C"
   },
   "gamma": 0.99,
@@ -81,7 +81,7 @@
         {}
       ]
     },
-    "policy_mapping_fn": "<ray.tune.suggest.variant_generator.function object at 0x7f34e87bbb50>"
+    "policy_mapping_fn": "<ray.tune.suggest.variant_generator.function object at 0x7f5307c24f50>"
   },
   "num_cpus_for_driver": 1,
   "num_cpus_per_worker": 0.5,
@@ -113,7 +113,7 @@
     "intra_op_parallelism_threads": 2,
     "log_device_placement": false
   },
-  "train_batch_size": 30000,
+  "train_batch_size": 15000,
   "use_pytorch": false,
   "vf_loss_coeff": 0.5
 }
