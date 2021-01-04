@@ -47,6 +47,8 @@ def create_parser():
                         help="name of the experiment")
     parser.add_argument("--save-dir", type=str, default="logs",
                         help="directory in which shapley logs should be saved")
+    parser.add_argument(
+        "--agents-fov", nargs="+", default=None, help="Field Of View of agents")
     return parser
 
 
@@ -55,6 +57,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     ray.init(num_cpus=2)
     agent, config = load_agent_config(args)
+    config["agents_fov"] = args.agents_fov
 
     if args.shapley_M is not None:
         monte_carlo_shapley_values(args, agent, config, 6)

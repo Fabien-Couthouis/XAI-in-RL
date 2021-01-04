@@ -29,16 +29,13 @@ def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
     return fig, ax
 
 
-def plot_model_rewards(folder_path: str):
+def plot_model_rewards(file_path: str):
     'Plot: reward per episode for each agent'
     fig, ax = plt.subplots()
 
-    all_files = [path for path in Path(folder_path).rglob('*.csv')]
+    df = pd.read_csv(file_path)
 
-    df = pd.concat((pd.read_csv(f)
-                    for f in all_files))
-
-    ax = sns.lineplot(x="episodes_total", y="episode_reward_mean", data=df)
+    ax = sns.lineplot(x="timesteps_total", y="episode_reward_mean", data=df)
     ax.set_xlabel('Training episode number')
     ax.set_ylabel('Mean global reward')
     # ax.set_title(f"Reward per episode on {len(agent_rewards[0])} episodes")
@@ -120,18 +117,18 @@ def load_cat_plot_data(path: str):
 
 
 if __name__ == "__main__":
-    agent_names = [f"Agent {i}" for i in range(6)]
-    path_pp_mc = r"rewards"
+    # agent_names = [f"Agent {i}" for i in range(6)]
+    # path_pp_mc = r"rewards"
 
-    data = load_cat_plot_data(path_pp_mc)
-    shapley_values = data[1]
-    print(data)
-    plot_shap_barchart(shapley_values[-6:], agent_names)
-    plot_shap_barchart(shapley_values[:6], agent_names)
-    plot_shap_barchart(shapley_values[6:12], agent_names)
+    # data = load_cat_plot_data(path_pp_mc)
+    # shapley_values = data[1]
+    # print(data)
+    # plot_shap_barchart(shapley_values[-6:], agent_names)
+    # plot_shap_barchart(shapley_values[:6], agent_names)
+    # plot_shap_barchart(shapley_values[6:12], agent_names)
 
     # cat_plot(*data)
 
-    # plot_model_rewards("rewards")
+    plot_model_rewards("models/harvest_5_agents/progress.csv")
 
     plt.show()

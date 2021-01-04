@@ -115,6 +115,8 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
         multiagent = False
         use_lstm = {DEFAULT_POLICY_ID: False}
 
+    env.set_agents_fov(config["agents_fov"])
+
     # Rollout
     episode = 0
     rewards_list = []
@@ -130,11 +132,11 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
                 env.render()
             if multiagent:
                 if args.shapley_M is not None:
-                    action = take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, 
-                    policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour)
+                    action = take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm,
+                                                        policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour)
                 else:
                     action = take_action(env, agent, state, mapping_cache, use_lstm,
-                                     policy_agent_mapping, state_init)
+                                         policy_agent_mapping, state_init)
 
             else:
                 if use_lstm[DEFAULT_POLICY_ID]:
@@ -227,7 +229,7 @@ def take_actions_for_coalition(env, agent, considered_player, state, mapping_cac
 
             elif missing_agents_behaviour == "idle":
                 # Idle action
-                action = 4 #env.ACTIONS["STAY"]
+                action = 4  # env.ACTIONS["STAY"]
 
             else:
                 raise ValueError(
