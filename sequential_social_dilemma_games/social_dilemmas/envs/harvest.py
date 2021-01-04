@@ -14,8 +14,8 @@ SPAWN_PROB = [0, 0.005, 0.02, 0.05]
 
 class HarvestEnv(MapEnv):
 
-    def __init__(self, ascii_map=HARVEST_MAP, num_agents=1, render=False):
-        super().__init__(ascii_map, num_agents, render)
+    def __init__(self, ascii_map=HARVEST_MAP, num_agents=1, render=False, agents_fov=None):
+        super().__init__(ascii_map, num_agents, render, agents_fov=agents_fov)
         self.apple_points = []
         for row in range(self.base_map.shape[0]):
             for col in range(self.base_map.shape[1]):

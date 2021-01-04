@@ -58,7 +58,7 @@ DEFAULT_COLOURS = {' ': [0, 0, 0],  # Black background
 
 class MapEnv(MultiAgentEnv):
 
-    def __init__(self, ascii_map, num_agents=1, render=True, color_map=None):
+    def __init__(self, ascii_map, num_agents=1, render=True, color_map=None, agents_fov=None):
         """
 
         Parameters
@@ -70,10 +70,13 @@ class MapEnv(MultiAgentEnv):
             Number of agents to have in the system.
         render: bool
             Whether to render the environment
+        agents_fov: list[int]
+            Field of view of each agent. Each observation pixel behind FOV is set to 0
         color_map: dict
             Specifies how to convert between ascii chars and colors
         """
         self.num_agents = num_agents
+        self.set_agents_fov(agents_fov)
         self.base_map = self.ascii_to_numpy(ascii_map)
         # map without agents or beams
         self.world_map = np.full((len(self.base_map), len(self.base_map[0])), ' ')
@@ -190,11 +193,33 @@ class MapEnv(MultiAgentEnv):
             agent.grid = map_with_agents
             rgb_arr = self.map_to_colors(agent.get_state(), self.color_map)
             rgb_arr = self.rotate_view(agent.orientation, rgb_arr)
-            observations[agent.agent_id] = rgb_arr
+            observations[agent.agent_id] = self.put_fov(rgb_arr, agent)
             rewards[agent.agent_id] = agent.compute_reward()
             dones[agent.agent_id] = agent.get_done()
         dones["__all__"] = np.any(list(dones.values()))
         return observations, rewards, dones, info
+
+    def set_agents_fov(self, agents_fov):
+        """Set agents field of view"""
+        if agents_fov is not None:
+            assert len(agents_fov) == self.num_agents
+            self.agents_fov = {}
+            for i, fov in enumerate(agents_fov):
+                agent_id = 'agent-' + str(i)
+                self.agents_fov[agent_id] = int(fov)
+
+    def put_fov(self, rgb_arr, agent):
+        """Set 0s outside agent FOV observations"""
+        pos = agent.get_pos()
+        fov = self.agents_fov[agent.agent_id]
+        Y, X = np.ogrid[:rgb_arr.shape[0], :rgb_arr.shape[1]]
+        dist_from_center = np.sqrt((X - pos[0])**2 + (Y-pos[1])**2)
+        mask = dist_from_center <= fov-1
+        res = np.zeros_like(rgb_arr)
+
+        for i in range(rgb_arr.shape[2]):
+            res[:, :, i] = np.where(mask, rgb_arr[:, :, i], 0)
+        return res
 
     def reset(self):
         """Reset the environment.
