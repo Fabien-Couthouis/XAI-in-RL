@@ -23,6 +23,9 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     'algorithm', 'A3C',
     'Name of the rllib algorithm to use.')
+tf.app.flags.DEFINE_string(
+    'restore', None,
+    'Path to the checkpoint to restore training state from.')
 tf.app.flags.DEFINE_integer(
     'num_agents', 5,
     'Number of agent policies')
@@ -172,6 +175,7 @@ def main(unused_argv):
             },
             'checkpoint_freq': FLAGS.checkpoint_frequency,
             "config": config,
+            "restore": FLAGS.restore
         }
     })
 
