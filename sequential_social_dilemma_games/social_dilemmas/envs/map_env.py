@@ -84,6 +84,8 @@ class MapEnv(MultiAgentEnv):
 
         self.agents = {}
 
+        self.agents_fov = None
+
         # returns the agent at a desired position if there is one
         self.pos_dict = {}
         self.color_map = color_map if color_map is not None else DEFAULT_COLOURS
@@ -210,16 +212,19 @@ class MapEnv(MultiAgentEnv):
 
     def put_fov(self, rgb_arr, agent):
         """Set 0s outside agent FOV observations"""
-        pos = agent.get_pos()
-        fov = self.agents_fov[agent.agent_id]
-        Y, X = np.ogrid[:rgb_arr.shape[0], :rgb_arr.shape[1]]
-        dist_from_center = np.sqrt((X - pos[0])**2 + (Y-pos[1])**2)
-        mask = dist_from_center <= fov-1
-        res = np.zeros_like(rgb_arr)
+        if self.agents_fov is not None:
+            pos = agent.get_pos()
+            fov = self.agents_fov[agent.agent_id]
+            Y, X = np.ogrid[:rgb_arr.shape[0], :rgb_arr.shape[1]]
+            dist_from_center = np.sqrt((X - pos[0])**2 + (Y-pos[1])**2)
+            mask = dist_from_center <= fov-1
+            res = np.zeros_like(rgb_arr)
 
-        for i in range(rgb_arr.shape[2]):
-            res[:, :, i] = np.where(mask, rgb_arr[:, :, i], 0)
-        return res
+            for i in range(rgb_arr.shape[2]):
+                res[:, :, i] = np.where(mask, rgb_arr[:, :, i], 0)
+            return res
+        else:
+            return rgb_arr
 
     def reset(self):
         """Reset the environment.
