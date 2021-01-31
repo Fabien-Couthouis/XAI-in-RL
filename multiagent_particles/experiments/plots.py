@@ -121,13 +121,16 @@ def load_cat_plot_data_pp(path: str, M: int = None):
     player_names_list = []
     methods_list = []
     shapley_values = []
+    run_list = []
     for f in all_files:
         df = pd.read_csv(f, names=names)
+        run_id = str(f).split("run_")[1].split("_")[0]
 
         player_names = df["player"].unique()
         methods = df["method"].unique()
         for method in methods:
             for player in player_names:
+                run_list.append(run_id)
                 df_sel = df[df['player'] == player]
                 df_sel = df_sel[df_sel['method'] == method]
                 if M is not None:
@@ -146,7 +149,7 @@ def load_cat_plot_data_pp(path: str, M: int = None):
 
     methods_list = ["noop" if m == "idle" else m for m in methods_list]
 
-    return player_names_list, shapley_values, methods_list
+    return player_names_list, shapley_values, methods_list, run_list
 
 
 def load_cat_plot_data_pp_true(path: str):
@@ -254,6 +257,35 @@ def plot_goal_agents_pp_one(folder_path: str, agent_names: List[str]):
 #     # MSE between real Shapley value and estimated Shapley value
 #     fig.tight_layout()
 #     return fig, ax
+def plot_shapley_vs_speed(path: str, agent_id: int):
+    data = load_cat_plot_data_pp(path)
+    # Hardcoded :S ; can use file names if needed
+    speeds = []
+    for speed_a1 in range(0, 22, 2):
+        speeds.append(speed_a1/10)
+        
+    data_df = pd.DataFrame({
+        'Player_id': [player_id for player_id in data[0]],
+        'Shapley_value': data[1],
+        'Run': data[3]
+    })
+    print(data_df)
+    data_df = data_df[data_df["Player_id"] == agent_id]
+    # *len(set(data[3])) to fit the nb of runs
+    data_df["Speed"] = speeds*len(set(data[3]))
+    # data_df["Run"] = data[3]
+
+    print(data_df)
+    # print(len(shapley_values))
+    fig, ax = plt.subplots()
+
+    ax = sns.lineplot(x="Speed", y="Shapley_value",  # hue="Run",
+                      data=data_df, palette="husl")
+    ax.set(xlabel="Speed of Predator 0")
+    ax.set(ylabel="Shapley Value")
+
+    fig.tight_layout()
+    return fig, ax
 
 
 if __name__ == "__main__":
@@ -267,17 +299,19 @@ if __name__ == "__main__":
     # shapley_values = data[1]
     # plot_shap_barchart(shapley_values[9:12], agent_names)
 
-    data = load_cat_plot_data_pp(path_pp_mc)
+    # data = load_cat_plot_data_pp(path_pp_mc)
+
+    # # cat_plot(*data)
+
+    # data_true = load_cat_plot_data_pp_true(path_pp_mc_true)
+
+    # # Add true shapley value to MC approximation
+    # for i in range(len(data_true)):
+    #     data[i].extend(data_true[i])
 
     # cat_plot(*data)
 
-    data_true = load_cat_plot_data_pp_true(path_pp_mc_true)
-
-    # Add true shapley value to MC approximation
-    for i in range(len(data_true)):
-        data[i].extend(data_true[i])
-
-    cat_plot(*data)
+    plot_shapley_vs_speed("rewards/exp2-speeds-chart", 0)
 
     # plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
     # plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
