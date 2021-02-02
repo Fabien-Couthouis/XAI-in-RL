@@ -49,6 +49,9 @@ def create_parser():
                         help="directory in which shapley logs should be saved")
     parser.add_argument(
         "--agents-fov", nargs="+", default=None, help="Field Of View of agents")
+    parser.add_argument(
+        "--agents-active", type=int, default=6, help='number of active agents'
+    )
     return parser
 
 
@@ -60,7 +63,7 @@ if __name__ == '__main__':
     config["agents_fov"] = args.agents_fov
 
     if args.shapley_M is not None:
-        monte_carlo_shapley_values(args, agent, config, 6)
+        monte_carlo_shapley_values(args, agent, config, args.agents_active)
 
     else:
         rollout(args, agent, config, args.num_rollouts)

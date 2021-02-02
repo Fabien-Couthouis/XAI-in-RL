@@ -117,6 +117,8 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
 
     env.set_agents_fov(config["agents_fov"])
 
+    agents_active = [f"agent-{i}" for i in range(args.agents_active)]
+
     # Rollout
     episode = 0
     rewards_list = []
@@ -133,10 +135,10 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
             if multiagent:
                 if args.shapley_M is not None:
                     action = take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm,
-                                                        policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour)
+                                                        policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour, agents_active)
                 else:
                     action = take_action(env, agent, state, mapping_cache, use_lstm,
-                                         policy_agent_mapping, state_init)
+                                         policy_agent_mapping, state_init, agents_active)
 
             else:
                 if use_lstm[DEFAULT_POLICY_ID]:
@@ -183,10 +185,11 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
     return rewards_list
 
 
-def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init):
+def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active):
     "Take agents actions"
     action_dict = {}
-    for agent_id in state.keys():
+    agent_ids = [agent_id for agent_id in state.keys() ]
+    for agent_id in agents_active:
         a_state = state[agent_id]
         if a_state is not None:
             policy_id = mapping_cache.setdefault(
@@ -206,10 +209,10 @@ def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping
     return action_dict
 
 
-def take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, coalition, missing_agents_behaviour):
+def take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, coalition, missing_agents_behaviour, agents_active):
     'Return actions where each agent in coalition follow the policy, others play at random if replace_missing_players=="random" or do not move if replace_missing_players=="idle'
     actions = take_action(env, agent, state, mapping_cache,
-                          use_lstm, policy_agent_mapping, state_init)
+                          use_lstm, policy_agent_mapping, state_init, agents_active)
     if coalition is None or considered_player is None:
         return actions
 
