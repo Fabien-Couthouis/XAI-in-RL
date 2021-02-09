@@ -1,4 +1,4 @@
-**Status:** Archive (code is provided as-is, no updates expected)
+**Warning:** Original README from [OpenAI](https://github.com/openai/multiagent-particle-envs).
 
 # Multi-Agent Deep Deterministic Policy Gradient (MADDPG)
 
