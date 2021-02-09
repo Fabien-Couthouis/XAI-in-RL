@@ -4,6 +4,7 @@ import pandas as pd
 import seaborn as sns
 import pickle
 import os
+import argparse
 from pathlib import Path
 from typing import List
 
@@ -12,6 +13,25 @@ plt.style.use('bmh')
 BARCHAR_TEXTPROPS = {"fontsize": 12, "weight": "bold"}
 PIECHART_TEXTPROPS = {"fontsize": 12}
 
+def create_parser():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='Plots different diagrams from already ran experiments.')
+
+    # required input parameters
+    parser.add_argument(
+        'result_dir', type=str, help='Directory containing results of experiments')
+
+    # optional input parameters
+    parser.add_argument(
+        '--num-agents',
+        type=int,
+        default=6,
+        help='The number of rollouts to visualize.')
+    parser.add_argument("--plot-type", type=str, default="shapley_barchart",
+                        help="type of diagram to plot: shapley_barchart/model_rewards/cat_plot")
+    parser.add_argument("--model-dir", type=str, default="models/harvest_6_agents/", help='model location, required when plotting model rewards')
+    return parser
 
 def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
     'Plot barchart: agent with corresponding shapley value'
@@ -117,18 +137,20 @@ def load_cat_plot_data(path: str):
 
 
 if __name__ == "__main__":
-    # agent_names = [f"Agent {i}" for i in range(6)]
-    # path_pp_mc = r"rewards"
+    args = create_parser()
+    agent_names = [f"Agent {i}" for i in range(args.num_agents)]
+    data = load_cat_plot_data(args.result_dir)
 
-    # data = load_cat_plot_data(path_pp_mc)
-    # shapley_values = data[1]
-    # print(data)
-    # plot_shap_barchart(shapley_values[-6:], agent_names)
-    # plot_shap_barchart(shapley_values[:6], agent_names)
-    # plot_shap_barchart(shapley_values[6:12], agent_names)
-
-    # cat_plot(*data)
-
-    plot_model_rewards("models/harvest_5_agents/progress.csv")
+    if args.plot_type == "shapley_barchart": 
+        shapley_values = data[1]
+        plot_shap_barchart(shapley_values[-6:], agent_names)
+        plot_shap_barchart(shapley_values[:6], agent_names)
+        plot_shap_barchart(shapley_values[6:12], agent_names)
+    elif args.plot_type == "shapley_cat_plot":
+        cat_plot(*data)
+    elif args.plot_type == "model_rewards":
+        plot_model_rewards(args.model_location)
+    else:
+        raise Exception("Unknown plot type")
 
     plt.show()
