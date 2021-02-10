@@ -22,13 +22,13 @@ def parse_args():
     parser.add_argument("--num-episodes", type=int,
                         default=1000000, help="number of episodes")
     parser.add_argument("--num-adversaries", type=int,
-                        default=1, help="number of adversaries")
+                        default=3, help="number of adversaries")
     parser.add_argument("--good-policy", type=str,
                         default="maddpg", help="policy for good agents")
     parser.add_argument("--adv-policy", type=str,
-                        default="ddpg", help="policy of adversaries")
+                        default="maddpg", help="policy of adversaries")
     parser.add_argument(
-        "--agent-speeds", nargs="+", default=[1.0, 1.0, 1.0, 1.3], help="Speed of agents (first are adversaries)")
+        "--agent-speeds", nargs="+", default=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.5, 0.5, 0.5], help="Speed of agents (first are adversaries)")
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="learning rate for Adam optimizer")

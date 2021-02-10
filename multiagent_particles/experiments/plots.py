@@ -263,7 +263,7 @@ def plot_shapley_vs_speed(path: str, agent_id: int):
     speeds = []
     for speed_a1 in range(0, 22, 2):
         speeds.append(speed_a1/10)
-        
+
     data_df = pd.DataFrame({
         'Player_id': [player_id for player_id in data[0]],
         'Shapley_value': data[1],
@@ -311,9 +311,12 @@ if __name__ == "__main__":
 
     # cat_plot(*data)
 
-    plot_shapley_vs_speed("rewards/exp2-speeds-chart", 0)
+    # plot_shapley_vs_speed("rewards/exp2-speeds-chart", 0)
 
     # plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
     # plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
+
+    plot_model_rewards_pp(
+        "D:/Users/Fabien/Documents/dev/XAI-in-RL/multiagent_particles/experiments/saves/run_3_vs_9")
 
     plt.show()
