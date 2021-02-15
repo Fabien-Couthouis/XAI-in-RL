@@ -1,6 +1,0 @@
-model_checkpoint_path: "model"
-all_model_checkpoint_paths: "../episode_62000/model"
-all_model_checkpoint_paths: "../episode_63000/model"
-all_model_checkpoint_paths: "../episode_64000/model"
-all_model_checkpoint_paths: "../episode_65000/model"
-all_model_checkpoint_paths: "model"

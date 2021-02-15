@@ -32,16 +32,17 @@ def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
     return fig, ax
 
 
-def plot_model_rewards_pp(folder_path: str):
+def plot_model_rewards_pp(folder_path: str, num_good_agents: int, num_preys: int):
     'Plot: reward per episode for each agent'
     fig, ax = plt.subplots()
 
     all_files = [path for path in Path(folder_path).rglob('*.csv')]
-    names = ["episode", "reward", "r1", "r2", "r3", "r4"]
+    names = ["episode", "reward"]
+    names += [f"r{i}" for i in range(num_good_agents+num_preys)]
 
     df = pd.concat((pd.read_csv(f, names=names)
                     for f in all_files))
-    df['sum_good_agents'] = df['r1']+df['r2']+df['r3']
+    df['sum_good_agents'] = sum([df[f"r{i}"] for i in range(num_good_agents)])
 
     ax = sns.lineplot(x="episode", y="sum_good_agents", data=df)
     ax.set_xlabel('Training episode number')
@@ -317,6 +318,6 @@ if __name__ == "__main__":
     # plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
 
     plot_model_rewards_pp(
-        "D:/Users/Fabien/Documents/dev/XAI-in-RL/multiagent_particles/experiments/saves/run_3_vs_9")
+        "saves/run_3_vs_9", 9, 3)
 
     plt.show()
