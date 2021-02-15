@@ -57,12 +57,13 @@ def save_goal_agents(N, folder_name, agent_speeds):
 
 if __name__ == "__main__":
     # SPEEDS_EXP1 = [[1.0, 1.0, 1.0, 1.3]] #default
-    SPEEDS = []
-    for speed_a1 in range(0, 22, 2):
-        SPEEDS.append([speed_a1/10, 1.0, 1.0, 1.3])
+    SPEEDS_EXP2_3VS9 = [[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.5, 0.5, 0.5]]
+    # SPEEDS = []
+    # for speed_a1 in range(0, 22, 2):
+    #     SPEEDS.append([speed_a1/10, 1.0, 1.0, 1.3])
 
     save_rewards(N=1, M=500, folder_name="rewards/exp2-3vs9",
-                 agent_speeds=SPEEDS)
+                 agent_speeds=SPEEDS_EXP2_3VS9)
     # # save_goal_agents(2000, "goal_agents/exp1",
     # #                  agent_speeds=SPEEDS_EXP1)
     # save_rewards_true_shapley(N=1, n_episodes=1000, folder_name="rewards/true-shap-exp22",
