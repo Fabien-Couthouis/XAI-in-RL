@@ -5,8 +5,9 @@ from rollout import rollout
 
 
 def save_rewards(N, M, folder_name, agent_speeds):
-    runs = ["run_10", "run_11", "run_12", "run_13", "run_14"]
-    missing_agents_behaviours = ["idle"]#, "random_player", "random"]
+    runs = ["run_3_vs_9"]
+    missing_agents_behaviours = ["idle", "random_player", "random"]
+    processes = []
     for n in range(N):
         for run in runs:
             for behaviour in missing_agents_behaviours:
@@ -18,7 +19,9 @@ def save_rewards(N, M, folder_name, agent_speeds):
                         command = f'python run.py --load-dir "saves/{run}/episode_200000/model" --missing-agents-behaviour {behaviour} --exp-name {exp_name} --save-dir {folder_name} --shapley-M {M} --num-episodes 1 --agent-speeds'
                         for speed in speeds:
                             command += f" {speed}"
-                        subprocess.run(command, shell=True)
+                        processes.append(subprocess.Popen(command, shell=True))
+    for p in processes:
+        p.wait()
 
 
 def save_rewards_true_shapley(N, n_episodes, folder_name, agent_speeds):
@@ -58,7 +61,7 @@ if __name__ == "__main__":
     for speed_a1 in range(0, 22, 2):
         SPEEDS.append([speed_a1/10, 1.0, 1.0, 1.3])
 
-    save_rewards(N=1, M=500, folder_name="rewards/exp2-speeds-chart",
+    save_rewards(N=1, M=500, folder_name="rewards/exp2-3vs9",
                  agent_speeds=SPEEDS)
     # # save_goal_agents(2000, "goal_agents/exp1",
     # #                  agent_speeds=SPEEDS_EXP1)
