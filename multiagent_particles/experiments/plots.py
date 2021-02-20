@@ -1,10 +1,8 @@
 from collections import defaultdict
-import os
-import pickle
 from itertools import permutations
 from pathlib import Path
 from typing import List
-
+import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -14,6 +12,26 @@ plt.style.use('bmh')
 
 BARCHAR_TEXTPROPS = {"fontsize": 12, "weight": "bold"}
 PIECHART_TEXTPROPS = {"fontsize": 12}
+
+def create_parser():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='Plots different diagrams from already ran experiments.')
+
+    # required input parameters
+    parser.add_argument(
+        'result_dir', type=str, help='Directory containing results of experiments')
+
+    # optional input parameters
+    parser.add_argument(
+        '--num-agents',
+        type=int,
+        default=3,
+        help='The number of rollouts to visualize.')
+    parser.add_argument("--plot-type", type=str, default="shapley_barchart",
+                        help="type of diagram to plot: shapley_barchart/model_rewards/cat_plot")
+    parser.add_argument("--model-dir", type=str, default="saves/run_3_vs_9/", help='model location, required when plotting model rewards')
+    return parser
 
 
 def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
@@ -290,34 +308,37 @@ def plot_shapley_vs_speed(path: str, agent_id: int):
 
 
 if __name__ == "__main__":
-    agent_names = ["Predator 0", "Predator 1", "Predator 2"]
-    path_pp_mc = r"rewards/exp1"
-
+    args = create_parser()
+    args = args.parse_args()
+    agent_names = [f"Predator {i}" for i in range(args.num_agents)]
+    path_pp_mc = args.result_dir #r"rewards/exp1"
     path_pp_mc_true = r"rewards/true-shap-exp1"
 
-    # data = load_cat_plot_data_pp(path_pp_mc)
-    # print(data)
-    # shapley_values = data[1]
-    # plot_shap_barchart(shapley_values[9:12], agent_names)
+    data = load_cat_plot_data_pp(path_pp_mc)
 
-    # data = load_cat_plot_data_pp(path_pp_mc)
+    if args.plot_type == "shapley_barchart":
+        shapley_values = data[1]
+        plot_shap_barchart(shapley_values[0:9], agent_names) #NOOP
+        plot_shap_barchart(shapley_values[9:18], agent_names)
+        plot_shap_barchart(shapley_values[18:27], agent_names)
+    elif args.plot_type == "shapley_cat_plot":
+        cat_plot(*data)
+    elif args.plot_type == "shapley_true":
+        data_true = load_cat_plot_data_pp_true(path_pp_mc_true)
 
-    # # cat_plot(*data)
-
-    # data_true = load_cat_plot_data_pp_true(path_pp_mc_true)
-
-    # # Add true shapley value to MC approximation
-    # for i in range(len(data_true)):
-    #     data[i].extend(data_true[i])
-
-    # cat_plot(*data)
-
-    # plot_shapley_vs_speed("rewards/exp2-speeds-chart", 0)
-
-    # plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
-    # plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
-
-    plot_model_rewards_pp(
-        "saves/run_3_vs_9", 9, 3)
+        # # Add true shapley value to MC approximation
+        for i in range(len(data_true)):
+            data[i].extend(data_true[i])
+        cat_plot(*data)
+    elif args.plot_type == "shapley_speed":
+        plot_shapley_vs_speed("rewards/exp2-speeds-chart", 0)
+    elif args.plot_type == "goal_agents":
+        plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
+        plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
+    elif args.plot_type == "model_rewards":
+        plot_model_rewards_pp(
+            "saves/run_3_vs_9", 9, 3)
+    else:
+        raise Exception(f"Unknown plot type: {args.plot_type}")
 
     plt.show()
