@@ -58,7 +58,28 @@ python plots.py rewards --plot_type your_plot_type
 
 ## Results
 
-pass
+### Multiagent Particle
+
+![sv_vs_speeds](results/sv_vs_speed.png)
+
+(Prey-Predators env, variable agents speeds) Plot ofthe Shapley value obtained (on 1,000 sample episodes) by a single MADDPG predator agent versus its speed. It is clearly visible  that  the  agent’s  Shapley  value  grows  proportionally with its speed. As a faster predator can obviously catch more often the prey, this fact supports the claim that Shapley values correlate with agents contributions to the common goal.
+
+
+![perf_vs_sv_exp2](results/perf_vs_shapley_exp2.png)
+
+(Prey-Predators  env,  variable agents speeds) The upper plot shows predator agents performance comparison for 10,000 sample episodes and 5 trained models  (2,000  sample  episodes  for  each  of  the  five  trained models) while the bottom plot present Shapley values obtained(on  1,000  sample  episodes)  for  each  predator  agent  for  oneof the 5 models with *noop* player exclusion method. Thehigh  numbers  of  models  and  sample  episodes  are  designed to counteract the stochastic nature of MADDPG. Making the predators’ speed vary created a clear hierarchy between themand, in the bottom plot, Shapley values accurately reflects this performance distribution.
+
+
+### Sequencial Social Dilemmas
+
+![shap_exclusion_exp3](results/shap_exclusion_exp3.png)
+
+(Harvest env) The upper plot presents Shapley valuesobtained (on 1,000 sample episodes) for each harvest agent using each of the three agent substitution methods. The bottom plot  also  features  Shapley  values  computed  with  the  same settings but with Agent 5 deactivated. The same settings were used for all agents. *noop* player exclusion method is the only one free from scoring negative cumulated reward due to random actions and thus is the most likely one to lead to Shapley values close to the agents’ real contributions.
+
+
+![social_metrics](results/social_metrics.png)
+
+Evolution of the Shapley values and social metrics from [Perolat et al.](https://arxiv.org/pdf/1707.06600.pdf) over different training episodes. From top to bottom are displayed, the Shapley values (*noop* action selection method;MC estimation with M=500), the mean of those Shapley valuesof all agents, the efficiency metric, the equality metric and the sustainability metric.
 
 ## Paper Citation
 
