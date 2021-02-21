@@ -90,7 +90,6 @@ def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, 
     fig, ax = plt.subplots()
     df_mean_sv = data_df.drop(['Player'], axis=1)
     df_mean_sv = df_mean_sv.groupby(['Episode']).mean()
-    print(df_mean_sv)
     ax = sns.lineplot(data=df_mean_sv, x='Episode', y='Value',
                       sort=True, )
     ax.set_xlabel("Episode",
@@ -300,7 +299,7 @@ if __name__ == "__main__":
     elif args.plot_type == "model_rewards":
         plot_model_rewards(args.model_location)
     elif args.plot_type == "social_metrics":
-        plot_social_metrics(data, 'social_metrics', range(1000, 8000, 1000))
+        plot_social_metrics(data, 'social_metrics', range(1000, 9000, 1000))
 
     else:
         raise Exception("Unknown plot type")
