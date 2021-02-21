@@ -13,6 +13,7 @@ plt.style.use('bmh')
 BARCHAR_TEXTPROPS = {"fontsize": 12, "weight": "bold"}
 PIECHART_TEXTPROPS = {"fontsize": 12}
 
+
 def create_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -30,7 +31,8 @@ def create_parser():
         help='The number of rollouts to visualize.')
     parser.add_argument("--plot-type", type=str, default="shapley_barchart",
                         help="type of diagram to plot: shapley_barchart/model_rewards/cat_plot")
-    parser.add_argument("--model-dir", type=str, default="saves/run_3_vs_9/", help='model location, required when plotting model rewards')
+    parser.add_argument("--model-dir", type=str, default="saves/run_3_vs_9/",
+                        help='model location, required when plotting model rewards')
     return parser
 
 
@@ -86,7 +88,7 @@ def cat_plot(player_names: List[str], shapley_values: List[float], methods: List
 
     data_df = pd.DataFrame(data)
     g = sns.catplot(x="Method_idx", y="Shapley value", height=4, aspect=.35, hue="Method",
-                    data=data_df, dodge=True, palette="husl", col="Player", kind="swarm")
+                    data=data_df, dodge=True, palette=sns.color_palette("husl", 6), col="Player", kind="swarm")
 
     g.set(xticks=[])
     g.set(xlabel='')
@@ -167,6 +169,8 @@ def load_cat_plot_data_pp(path: str, M: int = None):
                 shapley_values.append(shapley_value)
 
     methods_list = ["noop" if m == "idle" else m for m in methods_list]
+    for i in range(len(methods_list)):
+        methods_list[i] += " (MC estimation)"
 
     return player_names_list, shapley_values, methods_list, run_list
 
@@ -204,7 +208,7 @@ def load_cat_plot_data_pp_true(path: str):
         players_list.extend(players)
 
     for i in range(len(methods_list)):
-        methods_list[i] += "_true"
+        methods_list[i] += " (real)"
         methods_list[i] = methods_list[i].replace("idle", "noop")
     return players_list, shapley_values, methods_list
 
@@ -311,14 +315,14 @@ if __name__ == "__main__":
     args = create_parser()
     args = args.parse_args()
     agent_names = [f"Predator {i}" for i in range(args.num_agents)]
-    path_pp_mc = args.result_dir #r"rewards/exp1"
+    path_pp_mc = args.result_dir  # r"rewards/exp1"
     path_pp_mc_true = r"rewards/true-shap-exp1"
 
     data = load_cat_plot_data_pp(path_pp_mc)
 
     if args.plot_type == "shapley_barchart":
         shapley_values = data[1]
-        plot_shap_barchart(shapley_values[0:9], agent_names) #NOOP
+        plot_shap_barchart(shapley_values[0:9], agent_names)  # NOOP
         plot_shap_barchart(shapley_values[9:18], agent_names)
         plot_shap_barchart(shapley_values[18:27], agent_names)
     elif args.plot_type == "shapley_cat_plot":

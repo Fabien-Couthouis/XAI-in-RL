@@ -52,6 +52,9 @@ def create_parser():
     parser.add_argument(
         "--agents-active", type=int, default=6, help='number of active agents'
     )
+    parser.add_argument(
+        "--social-metrics", action='store_true',
+        help='whether to save rewards to compute social metrics')
     return parser
 
 
@@ -64,6 +67,8 @@ if __name__ == '__main__':
 
     if args.shapley_M is not None:
         monte_carlo_shapley_values(args, agent, config, args.agents_active)
+    elif args.social_metrics:
+        rollout(args, agent, config, args.num_rollouts)
 
     else:
         rollout(args, agent, config, args.num_rollouts)

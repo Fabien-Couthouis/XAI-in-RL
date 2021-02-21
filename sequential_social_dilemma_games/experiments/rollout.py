@@ -1,18 +1,20 @@
+import csv
 import json
 import os
 import random
 import shutil
 import sys
+from time import time
 
 import numpy as np
 import ray
+import utility_funcs
 from ray.cloudpickle import cloudpickle
 from ray.rllib.agents.registry import get_agent_class
 from ray.rllib.evaluation.sample_batch import DEFAULT_POLICY_ID
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
-import utility_funcs
 from models.conv_to_fc_net import ConvToFCNet
 
 # from ray.rllib.evaluation.sampler import clip_action
@@ -115,7 +117,8 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
         multiagent = False
         use_lstm = {DEFAULT_POLICY_ID: False}
 
-    env.set_agents_fov(config["agents_fov"])
+    if config["agents_fov"] is not None:
+        env.set_agents_fov(config["agents_fov"])
 
     agents_active = [f"agent-{i}" for i in range(args.agents_active)]
 
@@ -159,6 +162,12 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
             else:
                 reward_total += reward
 
+            if args.social_metrics:
+                with open(f'{args.save_dir}/{args.exp_name}.csv', 'a', newline='') as csvfile:
+                    writer = csv.writer(csvfile, delimiter=',')
+                    row = [episode] + [steps] + list(reward.values())
+                    writer.writerow(row)
+
             if args.save_video:
                 rgb_arr = env.map_to_colors()
                 full_obs[steps] = rgb_arr.astype(np.uint8)
@@ -188,7 +197,7 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
 def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active):
     "Take agents actions"
     action_dict = {}
-    agent_ids = [agent_id for agent_id in state.keys() ]
+    agent_ids = [agent_id for agent_id in state.keys()]
     for agent_id in agents_active:
         a_state = state[agent_id]
         if a_state is not None:
