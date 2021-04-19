@@ -50,6 +50,28 @@ def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
     fig.tight_layout()
     return fig, ax
 
+def efficiency(returns: List[float], num_agents: int):
+    'Efficiency over the episodes'
+    return (np.sum(returns)/num_agents)/len(returns)
+
+def equality(returns: List[float], num_agents: int):
+    'Equality over the episodes'
+    equalities = []
+    for episode_returns in returns:
+        diff = 0
+        sum_ri = 0
+        for i in range(num_agents):
+            sum_ri += episode_returns[i]
+            for j in range(num_agents):
+                diff += np.abs(episode_returns[i] - episode_returns[j])
+
+        equality = 1-(diff/(2*num_agents*sum_ri))
+        equalities.append(equality)
+    return np.mean(equalities)
+
+def sustainability(tr_lst: List[float], num_agents: int):
+    'Sustainability over the episodes'
+    return np.sum(np.mean(tr_lst, axis=0), axis=-1)/num_agents
 
 def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, mean_returns, ckpts):
     'Plot barchart: agent with corresponding shapley value'
@@ -174,6 +196,18 @@ def compute_shapley_value(rewards_with: np.ndarray, rewards_without: np.ndarray)
 
     return shapley_value
 
+def compute_shapley_value_social_metric(rewards_with: np.ndarray, rewards_without: np.ndarray, social_metric: str, num_agents: int):
+    assert social_metric in ["efficiency", "equality", "sustainability"]
+    
+    if social_metric == "efficiency":
+        shapley_value = efficiency(rewards_with, num_agents) - efficiency(rewards_without, num_agents)
+    elif social_metric == "equality":
+        shapley_value = equality(rewards_with, num_agents) - equality(rewards_without, num_agents)
+    else:
+        pass
+        #TODO: "sustainability"
+    
+    return shapley_value.mean()
 
 def load_cat_plot_data(path: str):
     all_files = [p for p in Path(path).rglob('*.csv')]
@@ -232,29 +266,6 @@ def load_social_metrics(path: str, ckpts: List[int], num_agents: int = 5):
                    ['tr'].mean() for agent_id in range(num_agents)]
         return ti_list
 
-    def efficiency(returns: List[float]):
-        'Efficiency over the episodes'
-        return (np.sum(returns)/num_agents)/len(returns)
-
-    def equality(returns: List[float]):
-        'Equality over the episodes'
-        equalities = []
-        for episode_returns in returns:
-            diff = 0
-            sum_ri = 0
-            for i in range(num_agents):
-                sum_ri += episode_returns[i]
-                for j in range(num_agents):
-                    diff += np.abs(episode_returns[i] - episode_returns[j])
-
-            equality = 1-(diff/(2*num_agents*sum_ri))
-            equalities.append(equality)
-        return np.mean(equalities)
-
-    def sustainability(tr_lst: List[float]):
-        'Sustainability over the episodes'
-        return np.sum(np.mean(tr_lst, axis=0), axis=-1)/num_agents
-
     efficiencies = []
     equalities = []
     sustainabilies = []
@@ -267,9 +278,9 @@ def load_social_metrics(path: str, ckpts: List[int], num_agents: int = 5):
         returns = [compute_returns(episode) for episode in range(n_episodes)]
         ti_lst = [compute_ti(episode) for episode in range(n_episodes)]
 
-        efficiencies.append(efficiency(returns))
-        equalities.append(equality(returns))
-        sustainabilies.append(sustainability(ti_lst))
+        efficiencies.append(efficiency(returns, num_agents))
+        equalities.append(equality(returns, num_agents))
+        sustainabilies.append(sustainability(ti_lst, num_agents))
 
         mean_returns.append(np.mean(returns, axis=0))
     return efficiencies, equalities, sustainabilies, mean_returns
