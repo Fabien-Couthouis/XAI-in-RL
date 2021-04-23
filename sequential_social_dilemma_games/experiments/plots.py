@@ -82,13 +82,17 @@ def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, 
         df = pd.DataFrame({'Value': [], 'Episode': []})
 
         for social_metric, ckpt in zip(social_metrics, ckpts):
-            row = [social_metric,  ckpt]
-            df.loc[len(df)] = row
+            for sm in social_metric.flatten():
+                row = [sm,  ckpt]
+                df.loc[len(df)] = row
+
         return df
 
     df_efficiency = create_df_social_metric(efficiencies)
     df_equality = create_df_social_metric(equalities)
     df_sustainability = create_df_social_metric(sustainabilities)
+
+    print(df_efficiency)
 
     # for agent_returns, ckpt in zip(mean_returns, ckpts):
     #     print(len(mean_returns), len(ckpts))
@@ -113,7 +117,7 @@ def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, 
     df_mean_sv = data_df.drop(['Player'], axis=1)
     df_mean_sv = df_mean_sv.groupby(['Episode']).mean()
     ax = sns.lineplot(data=df_mean_sv, x='Episode', y='Value',
-                      sort=True, )
+                      sort=True, ci="sd")
     ax.set_xlabel("Episode",
                   BARCHAR_TEXTPROPS)
     ax.set_ylabel('Mean of Shapley values of all agents', BARCHAR_TEXTPROPS)
@@ -121,7 +125,7 @@ def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, 
 
     fig, ax = plt.subplots()
     ax = sns.lineplot(data=df_efficiency, x='Episode', y='Value',
-                      sort=True, )
+                        ci="sd")
     ax.set_xlabel("Episode",
                   BARCHAR_TEXTPROPS)
     ax.set_ylabel('Efficiency', BARCHAR_TEXTPROPS)
@@ -129,7 +133,7 @@ def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, 
 
     fig, ax = plt.subplots()
     ax = sns.lineplot(data=df_equality, x='Episode', y='Value',
-                      sort=True, )
+                      sort=True, ci="sd")
     ax.set_xlabel("Episode",
                   BARCHAR_TEXTPROPS)
     ax.set_ylabel('Equality', BARCHAR_TEXTPROPS)
@@ -138,10 +142,11 @@ def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, 
 
     fig, ax = plt.subplots()
     ax = sns.lineplot(data=df_sustainability, x='Episode', y='Value',
-                      sort=True, )
+                      sort=True, ci="sd")
     ax.set_xlabel("Episode",
                   BARCHAR_TEXTPROPS)
     ax.set_ylabel('Sustainability', BARCHAR_TEXTPROPS)
+    ax.set_ylim(440, 500)
 
     fig.tight_layout()
     return fig, ax
@@ -254,7 +259,7 @@ def load_cat_plot_data(path: str):
     return pd.DataFrame(data)
 
 
-def load_social_metrics(path: str, ckpts: List[int], num_agents: int = 5):
+def load_social_metrics(paths: str, ckpts: List[int], num_agents: int = 5):
     def compute_returns(episode):
         df_episode = df[df['episode'] == episode]
         returns = [df_episode[f'reward_{agent_id}'].sum() for agent_id in range(num_agents)]
@@ -268,22 +273,35 @@ def load_social_metrics(path: str, ckpts: List[int], num_agents: int = 5):
 
     efficiencies = []
     equalities = []
-    sustainabilies = []
+    sustainabilities = []
     mean_returns = []
+
     for ckpt in ckpts:
-        df = pd.read_csv(f'{path}/social_metrics_ckpt_{ckpt}.csv', sep=',', names=['episode', 'tr'] +
-                         [f'reward_{agent_id}' for agent_id in range(num_agents)]).astype('float32')
+        sub_efficiencies = []
+        sub_equalities = []
+        sub_sustainabilities = []
+        sub_mean_returns = []
 
-        n_episodes = int(max(df['episode'].values))+1
-        returns = [compute_returns(episode) for episode in range(n_episodes)]
-        ti_lst = [compute_ti(episode) for episode in range(n_episodes)]
+        for path in paths:
+            df = pd.read_csv(f'{path}/social_metrics_ckpt_{ckpt}.csv', sep=',', names=['episode', 'tr'] +
+                            [f'reward_{agent_id}' for agent_id in range(num_agents)]).astype('float32')
 
-        efficiencies.append(efficiency(returns, num_agents))
-        equalities.append(equality(returns, num_agents))
-        sustainabilies.append(sustainability(ti_lst, num_agents))
+            n_episodes = int(max(df['episode'].values))+1
+            returns = [compute_returns(episode) for episode in range(n_episodes)]
+            ti_lst = [compute_ti(episode) for episode in range(n_episodes)]
 
-        mean_returns.append(np.mean(returns, axis=0))
-    return efficiencies, equalities, sustainabilies, mean_returns
+            sub_efficiencies.append(efficiency(returns, num_agents))
+            sub_equalities.append(equality(returns, num_agents))
+            sub_sustainabilities.append(sustainability(ti_lst, num_agents))
+
+            sub_mean_returns.append(np.mean(returns, axis=0))
+
+        efficiencies.append(np.dstack(sub_efficiencies))
+        equalities.append(np.dstack(sub_equalities))
+        sustainabilities.append(np.dstack(sub_sustainabilities))
+        mean_returns.append(np.dstack(sub_mean_returns))
+
+    return efficiencies, equalities, sustainabilities, mean_returns
 
 
 def plot_social_metrics(data, path, checkpoints, num_agents=5):
@@ -310,7 +328,7 @@ if __name__ == "__main__":
     elif args.plot_type == "model_rewards":
         plot_model_rewards(args.model_location)
     elif args.plot_type == "social_metrics":
-        plot_social_metrics(data, 'social_metrics', range(1000, 9000, 1000))
+        plot_social_metrics(data, ['social_metrics', 'social_metrics2', 'social_metrics3', 'social_metrics4'], range(1000, 9000, 1000))
 
     else:
         raise Exception("Unknown plot type")
