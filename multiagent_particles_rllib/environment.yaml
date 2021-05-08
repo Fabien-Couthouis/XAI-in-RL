@@ -128,4 +128,3 @@ dependencies:
     - tensorboardx==2.2
     - toml==0.10.2
     - typing-extensions==3.10.0.0
-prefix: D:\ProgramData\Miniconda3\envs\mparticles-rllib
