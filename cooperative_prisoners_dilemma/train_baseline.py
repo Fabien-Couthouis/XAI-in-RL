@@ -1,78 +1,82 @@
 import ray
 from ray import tune
 from ray.rllib.agents.registry import get_agent_class
-from ray.rllib.agents.qmix.qmix_policy_graph import QMixPolicyGraph
+from ray.rllib.agents.qmix.qmix_policy import QMixTorchPolicy
 from ray.rllib.models import ModelCatalog
 from ray.tune import run_experiments
 from ray.tune.registry import register_env
-import tensorflow as tf
+import argparse
 
 from env import PrisonerDilemma
 from experiments.models.conv_to_fc_net import ConvToFCNet
 
 
-FLAGS = tf.app.flags.FLAGS
+def create_parser():
 
-tf.app.flags.DEFINE_string(
-    'exp_name', None,
-    'Name of the ray_results experiment directory where results are stored.')
-tf.app.flags.DEFINE_string(
-    'algorithm', 'QMIX',
-    'Name of the rllib algorithm to use.')
-tf.app.flags.DEFINE_string(
-    'restore', None,
-    'Path to the checkpoint to restore training state from.')
-tf.app.flags.DEFINE_integer(
-    'num_agents', 5,
-    'Number of agent policies')
-tf.app.flags.DEFINE_integer(
-    'train_batch_size', 30000,
-    'Size of the total dataset over which one epoch is computed.')
-tf.app.flags.DEFINE_integer(
-    'checkpoint_frequency', 20,
-    'Number of steps before a checkpoint is saved.')
-tf.app.flags.DEFINE_integer(
-    'training_iterations', 10000,
-    'Total number of steps to train for')
-tf.app.flags.DEFINE_integer(
-    'num_cpus', 2,
-    'Number of available CPUs')
-tf.app.flags.DEFINE_integer(
-    'num_gpus', 1,
-    'Number of available GPUs')
-tf.app.flags.DEFINE_boolean(
-    'use_gpus_for_workers', False,
-    'Set to true to run workers on GPUs rather than CPUs')
-tf.app.flags.DEFINE_boolean(
-    'use_gpu_for_driver', False,
-    'Set to true to run driver on GPU rather than CPU.')
-tf.app.flags.DEFINE_float(
-    'num_workers_per_device', 2,
-    'Number of workers to place on a single device (CPU or GPU)')
+    tf.app.flags.DEFINE_string(
+        'exp_name', None,
+        'Name of the ray_results experiment directory where results are stored.')
+    tf.app.flags.DEFINE_string(
+        'algorithm', 'QMIX',
+        'Name of the rllib algorithm to use.')
+    tf.app.flags.DEFINE_string(
+        'restore', None,
+        'Path to the checkpoint to restore training state from.')
+    tf.app.flags.DEFINE_integer(
+        'num_agents', 5,
+        'Number of agent policies')
+    tf.app.flags.DEFINE_integer(
+        'train_batch_size', 30000,
+        'Size of the total dataset over which one epoch is computed.')
+    tf.app.flags.DEFINE_integer(
+        'checkpoint_frequency', 20,
+        'Number of steps before a checkpoint is saved.')
+    tf.app.flags.DEFINE_integer(
+        'training_iterations', 10000,
+        'Total number of steps to train for')
+    tf.app.flags.DEFINE_integer(
+        'num_cpus', 2,
+        'Number of available CPUs')
+    tf.app.flags.DEFINE_integer(
+        'num_gpus', 1,
+        'Number of available GPUs')
+    tf.app.flags.DEFINE_boolean(
+        'use_gpus_for_workers', False,
+        'Set to true to run workers on GPUs rather than CPUs')
+    tf.app.flags.DEFINE_boolean(
+        'use_gpu_for_driver', False,
+        'Set to true to run driver on GPU rather than CPU.')
+    tf.app.flags.DEFINE_float(
+        'num_workers_per_device', 2,
+        'Number of workers to place on a single device (CPU or GPU)')
 
-harvest_default_params = {
-    'lr_init': 0.00136,
-    'lr_final': 0.000028,
-    'entropy_coeff': -.000687}
+prisoner_default_params = {}
 
 
 def setup(env, hparams, algorithm, train_batch_size, num_cpus, num_gpus,
-          num_agents, use_gpus_for_workers=False, use_gpu_for_driver=False,
+          num_agents, num_repetitions, use_gpus_for_workers=False, use_gpu_for_driver=False,
           num_workers_per_device=1):
+    
+    env_config = {'num_players': num_agents, 'num_repetitions': num_repetitions}
 
-    def env_creator(_):
-        return PrisonerDilemma(num_agents=num_agents)
-    single_env = PrisonerDilemma()
+    single_env = PrisonerDilemma(env_config)
+    obs_space = single_env.observation_space
+    act_space = single_env.action_space
+    
+    if algorithm == "QMIX":
+        def env_creator(config):
+            return PrisonerDilemma(config).with_agent_groups({"group_1": list(range(num_agents))}, obs_space=obs_space, act_space=act_space)
+    else:
+        def env_creator(config):
+            return PrisonerDilemma(config)
 
     env_name = env + "_env"
     register_env(env_name, env_creator)
 
-    obs_space = single_env.observation_space
-    act_space = single_env.action_space
 
     # Each policy can have a different configuration (including custom model)
     def gen_policy():
-        return (QMixPolicyGraph, obs_space, act_space, {})
+        return (QMixTorchPolicy, obs_space, act_space, {})
 
     # Setup PPO with an ensemble of `num_policies` different policy graphs
     policy_graphs = {}
@@ -88,6 +92,9 @@ def setup(env, hparams, algorithm, train_batch_size, num_cpus, num_gpus,
 
     agent_cls = get_agent_class(algorithm)
     config = agent_cls._default_config.copy()
+
+    config['env_config']['num_players'] = num_agents
+    config['env_config']['num_repetitions'] = num_repetitions
 
     # information for replay
     config['env_config']['func_create'] = tune.function(env_creator)
@@ -134,10 +141,8 @@ def setup(env, hparams, algorithm, train_batch_size, num_cpus, num_gpus,
 
 def main(unused_argv):
     ray.init(num_cpus=FLAGS.num_cpus, redirect_output=True)
-    if FLAGS.env == 'harvest':
-        hparams = harvest_default_params
-    else:
-        hparams = cleanup_default_params
+    
+    hparams = prisoner_default_params
     alg_run, env_name, config = setup(FLAGS.env, hparams, FLAGS.algorithm,
                                       FLAGS.train_batch_size,
                                       FLAGS.num_cpus,
