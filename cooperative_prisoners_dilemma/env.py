@@ -25,7 +25,7 @@ class PrisonerDilemma(MultiAgentEnv):
         self.last_actions = {}
         return {"total_payout": 0, "signals": np.array([0]*self.num_players)}
     
-    def render(self, mode):
+    def render(self, mode=None):
         agent_table = PrettyTable()
         loc_map = ["Cooperate", "Defect"]
         agent_table.field_names = ["Agent id", "Action", "Signal", "Reward"]
@@ -40,7 +40,6 @@ class PrisonerDilemma(MultiAgentEnv):
 
         print(agent_table)
         print(info_table)
-        return super().render(mode=mode)
     
     def decouple_actions_signals(self, actions):
         acts = []
@@ -56,21 +55,21 @@ class PrisonerDilemma(MultiAgentEnv):
         num_coop = np.sum(acts)
         rewards = {}
         if num_coop == 0:
-            rewards = {f"agent_{i}": 1 for i in range(self.num_players)}
+            rewards = {f"agent-{i}": 1 for i in range(self.num_players)}
         elif num_coop == self.num_players:
-            rewards = {f"agent_{i}": 3 for i in range(self.num_players)}
+            rewards = {f"agent-{i}": 3 for i in range(self.num_players)}
         else:
             for i, a in enumerate(acts):
                 r = 5 if a[0] == 1 else 0
-                rewards[f"agent_{i}"] = r
+                rewards[f"agent-{i}"] = r
         self.total_payout += np.sum(rewards)
         ob = {"total_payout": self.total_payout, "signals": sigs}
         done = (self.current_stage == self.num_repetitions)
         obs = {}
         dones = {}
         for i in range(self.num_players):
-            obs[f"agent_{i}"] = ob
-            dones[f"agent_{i}"] = done
+            obs[f"agent-{i}"] = ob
+            dones[f"agent-{i}"] = done
         dones = {done for i in range(self.num_players)}
         info = {}
         self.last_rewards = rewards
