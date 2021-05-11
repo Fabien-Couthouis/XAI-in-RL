@@ -1,5 +1,4 @@
 from gym.spaces import Discrete, Box, Dict, MultiDiscrete
-from numpy.testing._private.utils import decorate_methods
 from ray.rllib.env import MultiAgentEnv
 import numpy as np
 from prettytable import PrettyTable
@@ -23,7 +22,7 @@ class PrisonerDilemma(MultiAgentEnv):
         self.total_payout = 0
         self.current_stage = 0
         self.last_actions = {}
-        return {"total_payout": 0, "signals": np.array([0]*self.num_players)}
+        return {f"agent-{i}": {"total_payout": 0, "signals": np.array([0]*self.num_players)} for i in range(self.num_players)}
     
     def render(self, mode=None):
         agent_table = PrettyTable()

@@ -1,175 +1,108 @@
 import ray
 from ray import tune
 from ray.rllib.agents.registry import get_agent_class
-from ray.rllib.agents.qmix.qmix_policy import QMixTorchPolicy
-from ray.rllib.models import ModelCatalog
+from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy
 from ray.tune import run_experiments
 from ray.tune.registry import register_env
+from gym.spaces import Tuple, Dict
 import argparse
 
 from env import PrisonerDilemma
-from experiments.models.conv_to_fc_net import ConvToFCNet
 
 
 def create_parser():
 
-    tf.app.flags.DEFINE_string(
-        'exp_name', None,
-        'Name of the ray_results experiment directory where results are stored.')
-    tf.app.flags.DEFINE_string(
-        'algorithm', 'QMIX',
-        'Name of the rllib algorithm to use.')
-    tf.app.flags.DEFINE_string(
-        'restore', None,
-        'Path to the checkpoint to restore training state from.')
-    tf.app.flags.DEFINE_integer(
-        'num_agents', 5,
-        'Number of agent policies')
-    tf.app.flags.DEFINE_integer(
-        'train_batch_size', 30000,
-        'Size of the total dataset over which one epoch is computed.')
-    tf.app.flags.DEFINE_integer(
-        'checkpoint_frequency', 20,
-        'Number of steps before a checkpoint is saved.')
-    tf.app.flags.DEFINE_integer(
-        'training_iterations', 10000,
-        'Total number of steps to train for')
-    tf.app.flags.DEFINE_integer(
-        'num_cpus', 2,
-        'Number of available CPUs')
-    tf.app.flags.DEFINE_integer(
-        'num_gpus', 1,
-        'Number of available GPUs')
-    tf.app.flags.DEFINE_boolean(
-        'use_gpus_for_workers', False,
-        'Set to true to run workers on GPUs rather than CPUs')
-    tf.app.flags.DEFINE_boolean(
-        'use_gpu_for_driver', False,
-        'Set to true to run driver on GPU rather than CPU.')
-    tf.app.flags.DEFINE_float(
-        'num_workers_per_device', 2,
-        'Number of workers to place on a single device (CPU or GPU)')
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env", type=str, default="PrisonerDilemma")
+    parser.add_argument("--algo", type=str, default="QMIX")
+    parser.add_argument("--train-batch-size", type=int, default=32)
+    parser.add_argument("--checkpoint-freq", type=int, default=100)
+    parser.add_argument("--rollout-frag-length", type=int, default=4)
+    parser.add_argument("--mixer", type=str, default="vdn")
+    parser.add_argument("--num-agents", type=int, default=5)
+    parser.add_argument("--num-repetitions", type=int, default=10)
+    parser.add_argument("--num-cpus", type=int, default=8)
+    parser.add_argument("--num-gpus", type=int, default=0)
+    parser.add_argument("--exp-name", type=str, default=None)
+    parser.add_argument("--restore", type=str, default=None)
+    parser.add_argument("--training-iterations", type=int, default=1e4)
 
-prisoner_default_params = {}
+    return parser
 
 
-def setup(env, hparams, algorithm, train_batch_size, num_cpus, num_gpus,
-          num_agents, num_repetitions, use_gpus_for_workers=False, use_gpu_for_driver=False,
-          num_workers_per_device=1):
+def setup(args):
     
-    env_config = {'num_players': num_agents, 'num_repetitions': num_repetitions}
+    env_config = {'num_players': args.num_agents, 'num_repetitions': args.num_repetitions}
 
     single_env = PrisonerDilemma(env_config)
-    obs_space = single_env.observation_space
-    act_space = single_env.action_space
+    obs_space = Tuple([Dict({"obs": single_env.observation_space})]*args.num_agents)
+    act_space = Tuple([single_env.action_space]*args.num_agents)
     
-    if algorithm == "QMIX":
+    if args.algo == "QMIX":
         def env_creator(config):
-            return PrisonerDilemma(config).with_agent_groups({"group_1": list(range(num_agents))}, obs_space=obs_space, act_space=act_space)
+            return PrisonerDilemma(config).with_agent_groups({"group_1": [f"agent-{i}" for i in range(args.num_agents)]}, obs_space=obs_space, act_space=act_space)
     else:
         def env_creator(config):
             return PrisonerDilemma(config)
 
-    env_name = env + "_env"
+    env_name = args.env + "_env"
     register_env(env_name, env_creator)
 
+    # # Each policy can have a different configuration (including custom model)
+    # def gen_policy():
+    #     return (PPOTorchPolicy, obs_space, act_space, {})
 
-    # Each policy can have a different configuration (including custom model)
-    def gen_policy():
-        return (QMixTorchPolicy, obs_space, act_space, {})
+    # policy_graphs = {}
+    # for i in range(args.num_agents):
+    #     policy_graphs['agent-' + str(i)] = gen_policy()
 
-    # Setup PPO with an ensemble of `num_policies` different policy graphs
-    policy_graphs = {}
-    for i in range(num_agents):
-        policy_graphs['agent-' + str(i)] = gen_policy()
+    # def policy_mapping_fn(agent_id):
+    #     return agent_id
 
-    def policy_mapping_fn(agent_id):
-        return agent_id
-
-    # register the custom model
-    model_name = "conv_to_fc_net"
-    ModelCatalog.register_custom_model(model_name, ConvToFCNet)
-
-    agent_cls = get_agent_class(algorithm)
+    agent_cls = get_agent_class(args.algo)
     config = agent_cls._default_config.copy()
 
-    config['env_config']['num_players'] = num_agents
-    config['env_config']['num_repetitions'] = num_repetitions
+    config['env_config']['num_players'] = args.num_agents
+    config['env_config']['num_repetitions'] = args.num_repetitions
 
     # information for replay
-    config['env_config']['func_create'] = tune.function(env_creator)
+    #config['env_config']['func_create'] = tune.function(env_creator)
     config['env_config']['env_name'] = env_name
-    config['env_config']['run'] = algorithm
-
-    # Calculate device configurations
-    gpus_for_driver = int(use_gpu_for_driver)
-    cpus_for_driver = 1 - gpus_for_driver
-    if use_gpus_for_workers:
-        spare_gpus = (num_gpus - gpus_for_driver)
-        num_workers = int(spare_gpus * num_workers_per_device)
-        num_gpus_per_worker = spare_gpus / num_workers
-        num_cpus_per_worker = 0
-    else:
-        spare_cpus = (num_cpus - cpus_for_driver)
-        num_workers = int(spare_cpus * num_workers_per_device)
-        num_gpus_per_worker = 0
-        num_cpus_per_worker = spare_cpus / num_workers
+    config['env_config']['run'] = args.algo
 
     # hyperparams
     config.update({
-                "train_batch_size": train_batch_size,
-                "horizon": 1000,
-                "lr_schedule":
-                [[0, hparams['lr_init']],
-                    [20000000, hparams['lr_final']]],
-                "num_workers": num_workers,
-                "num_gpus": gpus_for_driver,  # The number of GPUs for the driver
-                "num_cpus_for_driver": cpus_for_driver,
-                "num_gpus_per_worker": num_gpus_per_worker,   # Can be a fraction
-                "num_cpus_per_worker": num_cpus_per_worker,   # Can be a fraction
-                "entropy_coeff": hparams['entropy_coeff'],
-                "multiagent": {
-                    "policy_graphs": policy_graphs,
-                    "policy_mapping_fn": tune.function(policy_mapping_fn),
-                },
-                "model": {"custom_model": "conv_to_fc_net", "use_lstm": True,
-                          "lstm_cell_size": 128}
-
+                "mixer": args.mixer,
+                "train_batch_size": args.train_batch_size,
+                "num_workers": 0,
+                "num_gpus": args.num_gpus,  # The number of GPUs for the driver
+                "framework": "torch"
     })
-    return algorithm, env_name, config
+    return env_name, config
 
 
-def main(unused_argv):
-    ray.init(num_cpus=FLAGS.num_cpus, redirect_output=True)
+if __name__ == '__main__':
+    parser = create_parser()
+    args = parser.parse_args()
+    ray.init(num_cpus=args.num_cpus)
     
-    hparams = prisoner_default_params
-    alg_run, env_name, config = setup(FLAGS.env, hparams, FLAGS.algorithm,
-                                      FLAGS.train_batch_size,
-                                      FLAGS.num_cpus,
-                                      FLAGS.num_gpus, FLAGS.num_agents,
-                                      FLAGS.use_gpus_for_workers,
-                                      FLAGS.use_gpu_for_driver,
-                                      FLAGS.num_workers_per_device)
+    env_name, config = setup(args)
 
-    if FLAGS.exp_name is None:
-        exp_name = FLAGS.env + '_' + FLAGS.algorithm
+    if args.exp_name is None:
+        exp_name = args.env + '_' + args.algo
     else:
-        exp_name = FLAGS.exp_name
+        exp_name = args.exp_name
     print('Commencing experiment', exp_name)
 
     run_experiments({
         exp_name: {
-            "run": alg_run,
+            "run": args.algo,
             "env": env_name,
             "stop": {
-                "training_iteration": FLAGS.training_iterations
+                "training_iteration": args.training_iterations
             },
-            'checkpoint_freq': FLAGS.checkpoint_frequency,
+            'checkpoint_freq': args.checkpoint_freq,
             "config": config,
-            "restore": FLAGS.restore
+            "restore": args.restore
         }
     })
-
-
-if __name__ == '__main__':
-    tf.app.run(main)

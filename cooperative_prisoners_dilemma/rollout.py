@@ -15,8 +15,6 @@ from ray.rllib.evaluation.sample_batch import DEFAULT_POLICY_ID
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
-from models.conv_to_fc_net import ConvToFCNet
-
 # from ray.rllib.evaluation.sampler import clip_action
 
 
