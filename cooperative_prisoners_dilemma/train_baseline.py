@@ -101,7 +101,7 @@ def get_qmix_config():
     return {
         # === QMix ===
         # Mixing network. Either "qmix", "vdn", or None
-        "mixer": "qmix",
+        "mixer": "vdn",
         # Size of the mixing network embedding
         "mixing_embed_dim": 32,
         # Whether to use Double_Q learning
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     ray.init()
     register_env("prisoner_dilemma", env_creator)
     base_config = {
-        "num_workers": 4,
+        "num_workers": 8,
         "num_envs_per_worker": 10,
         "env": "prisoner_dilemma",
         "env_config": {

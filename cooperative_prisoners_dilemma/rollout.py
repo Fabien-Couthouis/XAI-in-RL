@@ -8,7 +8,6 @@ from time import time
 
 import numpy as np
 import ray
-import utility_funcs
 from ray.cloudpickle import cloudpickle
 from ray.rllib.agents.registry import get_agent_class
 from ray.rllib.evaluation.sample_batch import DEFAULT_POLICY_ID
@@ -52,8 +51,6 @@ def load_agent_config(args):
     env_creator = pkl['env_config']['func_create']
     env_name = config['env_config']['env_name']
     register_env(env_name, env_creator.func)
-
-    ModelCatalog.register_custom_model("conv_to_fc_net", ConvToFCNet)
 
     # Determine agent and checkpoint
     config_run = config['env_config']['run'] if 'run' in config['env_config'] \
@@ -212,10 +209,6 @@ def take_actions_for_coalition(env, agent, considered_player, state, mapping_cac
             elif missing_agents_behaviour == "random":
                 # Random action
                 action = np.random.randint(0, 6)
-
-            # elif missing_agents_behaviour == "idle":
-            #     # Idle action
-            #     action = 4  # env.ACTIONS["STAY"]
 
             else:
                 raise ValueError(

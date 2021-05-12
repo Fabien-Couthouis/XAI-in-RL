@@ -1,4 +1,4 @@
-from gym.spaces import Discrete, Box, Dict, MultiDiscrete
+from gym.spaces import Discrete, Box
 from ray.rllib.env import MultiAgentEnv
 import numpy as np
 from prettytable import PrettyTable
@@ -36,7 +36,7 @@ class PrisonerDilemma(MultiAgentEnv):
         loc_map = ["Cooperate", "Defect"]
         agent_table.field_names = ["Agent id", "Action", "Signal", "Reward"]
 
-        for agent_id, action in self.last_actions:
+        for agent_id, action in self.last_actions.items():
             a, s = ACTION_MAP[action]
             agent_table.add_row(
                 [agent_id, loc_map[a], s, self.last_rewards[agent_id]])
@@ -51,7 +51,7 @@ class PrisonerDilemma(MultiAgentEnv):
     def decouple_actions_signals(self, actions):
         acts = []
         sigs = []
-        for agent_id, action in actions.items():
+        for action in actions.values():
             a, s = ACTION_MAP[action]
             acts.append(a)
             sigs.append(s)
@@ -79,7 +79,6 @@ class PrisonerDilemma(MultiAgentEnv):
         dones = {"__all__": done}
         for i in range(self.num_players):
             obs[f"agent-{i}"] = ob
-            dones[f"agent-{i}"] = done
 
         info = {}
         self.last_rewards = rewards

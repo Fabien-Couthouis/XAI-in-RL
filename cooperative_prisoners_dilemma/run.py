@@ -3,7 +3,7 @@ import argparse
 import ray
 
 from rollout import rollout, load_agent_config
-from shapley_values import monte_carlo_shapley_values
+from shapley_values import monte_carlo_shapley_values, exact_shapley_values
 
 
 def create_parser():
@@ -49,6 +49,10 @@ def create_parser():
     parser.add_argument(
         "--social-metrics", action='store_true',
         help='whether to save rewards to compute social metrics')
+    parser.add_argument(
+        "--exact-shapley", action='store_true',
+        help='Computes the exact shapley values'
+    )
     return parser
 
 
@@ -60,6 +64,8 @@ if __name__ == '__main__':
 
     if args.shapley_M is not None:
         monte_carlo_shapley_values(args, agent, config, args.agents_active)
+    elif args.exact_shapley:
+        exact_shapley_values(args, agent, config, args.agents_active)
     elif args.social_metrics:
         rollout(args, agent, config, args.num_rollouts)
 
