@@ -50,7 +50,7 @@ def create_parser():
         "--social-metrics", action='store_true',
         help='whether to save rewards to compute social metrics')
     parser.add_argument(
-        "--exact-shapley", action='store_true',
+        "--shapley-exact", action='store_true',
         help='Computes the exact shapley values'
     )
     return parser
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     if args.shapley_M is not None:
         monte_carlo_shapley_values(args, agent, config, args.agents_active)
-    elif args.exact_shapley:
+    elif args.shapley_exact:
         exact_shapley_values(args, agent, config, args.agents_active)
     elif args.social_metrics:
         rollout(args, agent, config, args.num_rollouts)

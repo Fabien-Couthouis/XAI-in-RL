@@ -10,9 +10,10 @@ import numpy as np
 import ray
 from ray.cloudpickle import cloudpickle
 from ray.rllib.agents.registry import get_agent_class
-from ray.rllib.evaluation.sample_batch import DEFAULT_POLICY_ID
-from ray.rllib.models import ModelCatalog
+from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from ray.tune.registry import register_env
+from train_baseline import env_creator
+from ray.rllib.env import MultiAgentEnv
 
 # from ray.rllib.evaluation.sampler import clip_action
 
@@ -47,11 +48,9 @@ def load_agent_config(args):
     else:
         multiagent = False
 
-    # Create and register a gym+rllib env
-    env_creator = pkl['env_config']['func_create']
-    env_name = config['env_config']['env_name']
-    register_env(env_name, env_creator.func)
-
+    env_name = config['env']
+    register_env(env_name, env_creator)
+ 
     # Determine agent and checkpoint
     config_run = config['env_config']['run'] if 'run' in config['env_config'] \
         else None
@@ -91,16 +90,14 @@ def load_agent_config(args):
 
 
 def rollout(args, agent, config, num_episodes, considered_player=None, coalition=None):
-    if hasattr(agent, "local_evaluator"):
-        env = agent.local_evaluator.env
-
-    if hasattr(agent, "local_evaluator"):
-        multiagent = agent.local_evaluator.multiagent
+    if hasattr(agent, "workers"):
+        env = agent.workers.local_worker().env
+        multiagent = isinstance(env, MultiAgentEnv)
         if multiagent:
             policy_agent_mapping = agent.config["multiagent"][
                 "policy_mapping_fn"]
             mapping_cache = {}
-        policy_map = agent.local_evaluator.policy_map
+        policy_map = agent.workers.local_worker().policy_map
         state_init = {p: m.get_initial_state() for p, m in policy_map.items()}
         use_lstm = {p: len(s) > 0 for p, s in state_init.items()}
     else:
@@ -118,7 +115,7 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
         state = env.reset()
         done = False
         reward_total = 0.0
-        while not done and steps < (config['horizon'] or steps + 1):
+        while not done:
             if args.render:
                 print("render")
                 env.render()

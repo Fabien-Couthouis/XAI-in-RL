@@ -31,7 +31,7 @@ def create_parser():
              "class registered in the tune registry. ")
     parser.add_argument("--num-agents", type=int, default=5)
     parser.add_argument("--num-repetitions", type=int, default=10)
-    parser.add_argument("--training-iterations", type=int, default=1e4)
+    parser.add_argument("--training-iterations", type=int, default=1200)
     return parser
 
 
@@ -94,6 +94,9 @@ def get_ppo_config():
         "batch_mode": "truncate_episodes",
         # Which observation filter to apply to the observation.
         "observation_filter": "NoFilter",
+        "multiagent": {
+            "policy_mapping_fn": lambda x: x,
+        }
     }
 
 
@@ -140,9 +143,9 @@ def get_qmix_config():
         },
 
         # Number of env steps to optimize for before returning
-        "timesteps_per_iteration": 1000,
+        "timesteps_per_iteration": 500,
         # Update the target network every `target_network_update_freq` steps.
-        "target_network_update_freq": 500,
+        "target_network_update_freq": 300,
 
         # === Replay buffer ===
         # Size of the replay buffer in batches (not timesteps!).
@@ -165,7 +168,7 @@ def get_qmix_config():
         # Size of a batched sampled from replay buffer for training. Note that
         # if async_updates is set, then each worker returns gradients for a
         # batch of this size.
-        "train_batch_size": 32,
+        "train_batch_size": 64,
 
         # === Parallelism ===
         # Number of workers for collecting samples with. This only makes sense
@@ -199,6 +202,12 @@ if __name__ == "__main__":
 
     if args.run.upper() == "PPO":
         algo_config = get_ppo_config()
+        single_env = env_creator(env_config=base_config["env_config"])
+        policies = {}
+        for i in range(args.num_agents):
+            policies[f"agent-{i}"] = (None, single_env.observation_space, single_env.action_space, {"agent_id": f"agent-{i}"})
+        algo_config["multiagent"]["policies"] = policies
+        
 
     elif args.run.upper() == "QMIX":
         single_env = env_creator(env_config=base_config["env_config"])
