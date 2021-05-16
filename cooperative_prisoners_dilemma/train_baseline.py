@@ -95,7 +95,7 @@ def get_ppo_config():
         # Which observation filter to apply to the observation.
         "observation_filter": "NoFilter",
         "multiagent": {
-            "policy_mapping_fn": lambda x: x,
+            "policy_mapping_fn": lambda agent_id: agent_id,
         }
     }
 
