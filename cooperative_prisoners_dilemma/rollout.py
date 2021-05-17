@@ -42,7 +42,7 @@ def load_agent_config(args):
 
     # check if we have a multiagent scenario but in a
     # backwards compatible way
-    if config.get('multiagent', {}).get('policy_graphs', {}):
+    if config.get('multiagent', {}).get('policies', {}):
         multiagent = True
         config['multiagent'] = pkl['multiagent']
     else:
@@ -79,6 +79,7 @@ def load_agent_config(args):
         config["sample_async"] = False
     else:
         config['num_workers'] = 0
+
 
     # create the agent that will be used to compute the actions
     agent = agent_cls(env=env_name, config=config)
