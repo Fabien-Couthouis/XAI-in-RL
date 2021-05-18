@@ -173,7 +173,7 @@ class HarvestAgent(Agent):
 
     @property
     def observation_space(self):
-        return Box(low=0.0, high=0.0, shape=(2 * self.view_len + 1,
+        return Box(low=0.0, high=255, shape=(2 * self.view_len + 1,
                                              2 * self.view_len + 1, 3), dtype=np.float32)
 
     def hit(self, char):

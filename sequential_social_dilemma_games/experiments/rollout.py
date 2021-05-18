@@ -8,6 +8,7 @@ from time import time
 
 import numpy as np
 import ray
+from ray.rllib.env.multi_agent_env import MultiAgentEnv
 import utility_funcs
 from ray.cloudpickle import cloudpickle
 from ray.rllib.agents.registry import get_agent_class
@@ -96,21 +97,20 @@ def load_agent_config(args):
 
 
 def rollout(args, agent, config, num_episodes, considered_player=None, coalition=None):
-    if hasattr(agent, "local_evaluator"):
-        env = agent.local_evaluator.env
+    if hasattr(agent, "workers"):
+        env = agent.workers.local_worker().env
 
-    if args.save_video:
-        shape = env.base_map.shape
-        full_obs = [np.zeros((shape[0], shape[1], 3), dtype=np.uint8)
-                    for i in range(config["horizon"])]
+        if args.save_video:
+            shape = env.base_map.shape
+            full_obs = [np.zeros((shape[0], shape[1], 3), dtype=np.uint8)
+                        for i in range(config["horizon"])]
 
-    if hasattr(agent, "local_evaluator"):
-        multiagent = agent.local_evaluator.multiagent
-        if multiagent:
+        multiagent = isinstance(env, MultiAgentEnv)
+        if agent.workers.local_worker().multiagent:
             policy_agent_mapping = agent.config["multiagent"][
                 "policy_mapping_fn"]
             mapping_cache = {}
-        policy_map = agent.local_evaluator.policy_map
+        policy_map = agent.workers.local_worker().policy_map
         state_init = {p: m.get_initial_state() for p, m in policy_map.items()}
         use_lstm = {p: len(s) > 0 for p, s in state_init.items()}
     else:
@@ -138,10 +138,10 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
             if multiagent:
                 if args.shapley_M is not None:
                     action = take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm,
-                                                        policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour, agents_active)
+                                                        policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour, agents_active, args.run)
                 else:
                     action = take_action(env, agent, state, mapping_cache, use_lstm,
-                                         policy_agent_mapping, state_init, agents_active)
+                                         policy_agent_mapping, state_init, agents_active, args.run)
 
             else:
                 if use_lstm[DEFAULT_POLICY_ID]:
@@ -194,34 +194,38 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
     return rewards_list
 
 
-def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active):
+def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active, algo):
     "Take agents actions"
     action_dict = {}
     agent_ids = [agent_id for agent_id in state.keys()]
     for agent_id in agents_active:
         a_state = state[agent_id]
         if a_state is not None:
-            policy_id = mapping_cache.setdefault(
-                agent_id, policy_agent_mapping(agent_id))
-            p_use_lstm = use_lstm[policy_id]
-            if p_use_lstm:
-                a_action, p_state_init, _ = agent.compute_action(
-                    a_state,
-                    state=state_init[policy_id],
-                    policy_id=policy_id)
-                state_init[policy_id] = p_state_init
+            if algo is not "QMIX":
+                policy_id = mapping_cache.setdefault(
+                    agent_id, policy_agent_mapping(agent_id))
+                p_use_lstm = use_lstm[policy_id]
+                if p_use_lstm:
+                    a_action, p_state_init, _ = agent.compute_action(
+                        a_state,
+                        state=state_init[policy_id],
+                        policy_id=policy_id)
+                    state_init[policy_id] = p_state_init
+                else:
+                    a_action = agent.compute_action(
+                        a_state, policy_id=policy_id)
             else:
                 a_action = agent.compute_action(
-                    a_state, policy_id=policy_id)
+                        a_state)
             action_dict[agent_id] = a_action
 
     return action_dict
 
 
-def take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, coalition, missing_agents_behaviour, agents_active):
+def take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, coalition, missing_agents_behaviour, agents_active, algo):
     'Return actions where each agent in coalition follow the policy, others play at random if replace_missing_players=="random" or do not move if replace_missing_players=="idle'
     actions = take_action(env, agent, state, mapping_cache,
-                          use_lstm, policy_agent_mapping, state_init, agents_active)
+                          use_lstm, policy_agent_mapping, state_init, agents_active, algo)
     if coalition is None or considered_player is None:
         return actions
 

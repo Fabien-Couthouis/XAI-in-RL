@@ -56,10 +56,10 @@ def save_rewards_metrics(n_episodes, save_folder_name, checkpoint_folder, checkp
 
 
 if __name__ == "__main__":
-    checkpoints = ['200']#list(range(1000, 9000, 1000))
-    #save_rewards(N=1, M=1000, model_name="./models/PPO_5_agents", folder_name="ppo_rewards_monte_carlo", agents_active=5, checkpoints=checkpoints)
+    checkpoints = ['1200']#list(range(1000, 9000, 1000))
+    save_rewards(N=1, M=1000, model_name="./models/QMIX_5_agents", folder_name="qmix_rewards", agents_active=5, checkpoints=checkpoints)
 
-    save_exact_rewards(N=1, model_name="./models/PPO_5_agents", folder_name="ppo_rewards_exact", agents_active=5, checkpoints=checkpoints)
+    #save_exact_rewards(N=1, model_name="./models/PPO_5_agents", folder_name="ppo_rewards_exact", agents_active=5, checkpoints=checkpoints)
 
     
     # save_rewards_metrics(100, "social_metrics4", "models/harvest_5_agents_additionnal",

@@ -163,25 +163,29 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
     return rewards_list
 
 
-def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active):
+def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active, algo):
     "Take agents actions"
     action_dict = {}
     agent_ids = [agent_id for agent_id in state.keys()]
     for agent_id in agents_active:
         a_state = state[agent_id]
         if a_state is not None:
-            policy_id = mapping_cache.setdefault(
-                agent_id, policy_agent_mapping(agent_id))
-            p_use_lstm = use_lstm[policy_id]
-            if p_use_lstm:
-                a_action, p_state_init, _ = agent.compute_action(
-                    a_state,
-                    state=state_init[policy_id],
-                    policy_id=policy_id)
-                state_init[policy_id] = p_state_init
+            if algo is not "QMIX":
+                policy_id = mapping_cache.setdefault(
+                    agent_id, policy_agent_mapping(agent_id))
+                p_use_lstm = use_lstm[policy_id]
+                if p_use_lstm:
+                    a_action, p_state_init, _ = agent.compute_action(
+                        a_state,
+                        state=state_init[policy_id],
+                        policy_id=policy_id)
+                    state_init[policy_id] = p_state_init
+                else:
+                    a_action = agent.compute_action(
+                        a_state, policy_id=policy_id)
             else:
                 a_action = agent.compute_action(
-                    a_state, policy_id=policy_id)
+                        a_state)
             action_dict[agent_id] = a_action
 
     return action_dict
