@@ -168,7 +168,9 @@ def get_qmix_config():
         # Size of a batched sampled from replay buffer for training. Note that
         # if async_updates is set, then each worker returns gradients for a
         # batch of this size.
-        "train_batch_size": 64,
+        "train_batch_size": 30000,
+
+        "framework": "torch",
 
         # === Parallelism ===
         # Number of workers for collecting samples with. This only makes sense
@@ -184,7 +186,10 @@ def get_qmix_config():
 
         # Custom model registration
         "model": {
-            "lstm_cell_size": 64
+            "lstm_cell_size": 128,
+            "fcnet_hiddens": [32,32],
+            "fcnet_activation": None,
+            "conv_filters": [[6, [3,3], 1]],
         }
     }
 
@@ -197,11 +202,13 @@ if __name__ == "__main__":
     register_env("harvest", env_creator)
 
     # register the custom model
-    model_name = "conv_to_fc_net"
+    # model_name = "conv_to_fc_net"
+    # ModelCatalog.register_custom_model(model_name, ConvToFCNet)
 
     base_config = {
         "num_workers": 8,
         "num_envs_per_worker": 10,
+        "num_gpus": 1,
         "horizon": args.horizon,
         "env": "harvest",
         "env_config": {
