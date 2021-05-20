@@ -4,8 +4,7 @@ import csv
 from itertools import combinations, permutations
 from statistics import mean
 from math import factorial
-import maddpg.common.tf_util as U
-from utils import get_trainers, mlp_model
+
 
 from rollout import rollout
 
