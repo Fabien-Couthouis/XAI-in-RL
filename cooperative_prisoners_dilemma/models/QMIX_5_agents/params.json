@@ -1,0 +1,37 @@
+{
+  "batch_mode": "complete_episodes",
+  "buffer_size": 1000,
+  "double_q": true,
+  "env": "grouped_prisoner_dilemma",
+  "env_config": {
+    "num_players": 5,
+    "num_repetitions": 10
+  },
+  "evaluation_config": {
+    "explore": false
+  },
+  "evaluation_interval": null,
+  "evaluation_num_episodes": 10,
+  "exploration_config": {
+    "epsilon_timesteps": 10000,
+    "final_epsilon": 0.02,
+    "initial_epsilon": 1.0,
+    "type": "EpsilonGreedy"
+  },
+  "grad_norm_clipping": 10,
+  "learning_starts": 1000,
+  "lr": 0.0005,
+  "min_iter_time_s": 1,
+  "mixer": "vdn",
+  "mixing_embed_dim": 32,
+  "num_envs_per_worker": 10,
+  "num_workers": 0,
+  "optim_alpha": 0.99,
+  "optim_eps": 1e-05,
+  "per_worker_exploration": false,
+  "rollout_fragment_length": 4,
+  "target_network_update_freq": 300,
+  "timesteps_per_iteration": 500,
+  "train_batch_size": 64,
+  "worker_side_prioritization": false
+}

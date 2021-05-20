@@ -8,12 +8,12 @@ from time import time
 
 import numpy as np
 import ray
-import utility_funcs
 from ray.cloudpickle import cloudpickle
 from ray.rllib.agents.registry import get_agent_class
-from ray.rllib.evaluation.sample_batch import DEFAULT_POLICY_ID
-from ray.rllib.models import ModelCatalog
+from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from ray.tune.registry import register_env
+from train_baseline import env_creator
+from ray.rllib.env import MultiAgentEnv
 
 # from ray.rllib.evaluation.sampler import clip_action
 
@@ -42,19 +42,15 @@ def load_agent_config(args):
 
     # check if we have a multiagent scenario but in a
     # backwards compatible way
-    if config.get('multiagent', {}).get('policy_graphs', {}):
+    if config.get('multiagent', {}).get('policies', {}):
         multiagent = True
         config['multiagent'] = pkl['multiagent']
     else:
         multiagent = False
 
-    # Create and register a gym+rllib env
-    env_creator = pkl['env_config']['func_create']
-    env_name = config['env_config']['env_name']
-    register_env(env_name, env_creator.func)
-
-    ModelCatalog.register_custom_model("conv_to_fc_net", ConvToFCNet)
-
+    env_name = config['env']
+    register_env(env_name, env_creator)
+ 
     # Determine agent and checkpoint
     config_run = config['env_config']['run'] if 'run' in config['env_config'] \
         else None
@@ -84,6 +80,7 @@ def load_agent_config(args):
     else:
         config['num_workers'] = 0
 
+
     # create the agent that will be used to compute the actions
     agent = agent_cls(env=env_name, config=config)
     checkpoint = result_dir + '/checkpoint_' + args.checkpoint_num
@@ -94,16 +91,14 @@ def load_agent_config(args):
 
 
 def rollout(args, agent, config, num_episodes, considered_player=None, coalition=None):
-    if hasattr(agent, "local_evaluator"):
-        env = agent.local_evaluator.env
-
-    if hasattr(agent, "local_evaluator"):
-        multiagent = agent.local_evaluator.multiagent
+    if hasattr(agent, "workers"):
+        env = agent.workers.local_worker().env
+        multiagent = isinstance(env, MultiAgentEnv)
         if multiagent:
             policy_agent_mapping = agent.config["multiagent"][
                 "policy_mapping_fn"]
             mapping_cache = {}
-        policy_map = agent.local_evaluator.policy_map
+        policy_map = agent.workers.local_worker().policy_map
         state_init = {p: m.get_initial_state() for p, m in policy_map.items()}
         use_lstm = {p: len(s) > 0 for p, s in state_init.items()}
     else:
@@ -121,7 +116,7 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
         state = env.reset()
         done = False
         reward_total = 0.0
-        while not done and steps < (config['horizon'] or steps + 1):
+        while not done:
             if args.render:
                 print("render")
                 env.render()
@@ -168,25 +163,29 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
     return rewards_list
 
 
-def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active):
+def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active, algo):
     "Take agents actions"
     action_dict = {}
     agent_ids = [agent_id for agent_id in state.keys()]
     for agent_id in agents_active:
         a_state = state[agent_id]
         if a_state is not None:
-            policy_id = mapping_cache.setdefault(
-                agent_id, policy_agent_mapping(agent_id))
-            p_use_lstm = use_lstm[policy_id]
-            if p_use_lstm:
-                a_action, p_state_init, _ = agent.compute_action(
-                    a_state,
-                    state=state_init[policy_id],
-                    policy_id=policy_id)
-                state_init[policy_id] = p_state_init
+            if algo is not "QMIX":
+                policy_id = mapping_cache.setdefault(
+                    agent_id, policy_agent_mapping(agent_id))
+                p_use_lstm = use_lstm[policy_id]
+                if p_use_lstm:
+                    a_action, p_state_init, _ = agent.compute_action(
+                        a_state,
+                        state=state_init[policy_id],
+                        policy_id=policy_id)
+                    state_init[policy_id] = p_state_init
+                else:
+                    a_action = agent.compute_action(
+                        a_state, policy_id=policy_id)
             else:
                 a_action = agent.compute_action(
-                    a_state, policy_id=policy_id)
+                        a_state)
             action_dict[agent_id] = a_action
 
     return action_dict
@@ -212,10 +211,6 @@ def take_actions_for_coalition(env, agent, considered_player, state, mapping_cac
             elif missing_agents_behaviour == "random":
                 # Random action
                 action = np.random.randint(0, 6)
-
-            # elif missing_agents_behaviour == "idle":
-            #     # Idle action
-            #     action = 4  # env.ACTIONS["STAY"]
 
             else:
                 raise ValueError(
