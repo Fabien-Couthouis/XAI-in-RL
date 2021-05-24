@@ -118,9 +118,9 @@ def get_qmix_config():
             "type": "EpsilonGreedy",
             # Config for the Exploration class" constructor:
             "initial_epsilon": 1.0,
-            "final_epsilon": 0.02,
+            "final_epsilon": 0.05,
             # Timesteps over which to anneal epsilon.
-            "epsilon_timesteps": 10000,
+            "epsilon_timesteps": 50000,
 
             # For soft_q, use:
             # "exploration_config" = {
@@ -143,9 +143,9 @@ def get_qmix_config():
         },
 
         # Number of env steps to optimize for before returning
-        "timesteps_per_iteration": 500,
+        "timesteps_per_iteration": 1000,
         # Update the target network every `target_network_update_freq` steps.
-        "target_network_update_freq": 300,
+        "target_network_update_freq": 500,
 
         # === Replay buffer ===
         # Size of the replay buffer in batches (not timesteps!).
@@ -168,7 +168,7 @@ def get_qmix_config():
         # Size of a batched sampled from replay buffer for training. Note that
         # if async_updates is set, then each worker returns gradients for a
         # batch of this size.
-        "train_batch_size": 30000,
+        "train_batch_size": 32,
 
         "framework": "torch",
 
@@ -186,9 +186,9 @@ def get_qmix_config():
 
         # Custom model registration
         "model": {
-            "lstm_cell_size": 128,
-            "fcnet_hiddens": [32,32],
-            "fcnet_activation": None,
+            "lstm_cell_size": 64,
+            "post_fcnet_hiddens": [32,32],
+            "post_fcnet_activation": None,
             "conv_filters": [[6, [3,3], 1]],
         }
     }
