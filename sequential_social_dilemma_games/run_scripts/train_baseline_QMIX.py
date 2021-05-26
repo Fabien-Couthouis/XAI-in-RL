@@ -153,7 +153,7 @@ def get_qmix_config():
 
         # === Optimization ===
         # Learning rate for RMSProp optimizer
-        "lr": 0.0005,
+        "lr": tune.grid_search([1e-3, 1e-4, 1e-5]),
         # RMSProp alpha
         "optim_alpha": 0.99,
         # RMSProp epsilon

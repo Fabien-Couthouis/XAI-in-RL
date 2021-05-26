@@ -227,9 +227,11 @@ def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping
                     a_action = agent.compute_action(
                         a_state, policy_id=policy_id)
             else:
-                a_action = agent.compute_action(
-                        a_state)
-               
+                policy_id = list(state_init.keys())[0]
+                a_action, p_state_init = agent.compute_action(
+                        a_state, state=state_init[policy_id],
+                        policy_id=policy_id)
+                state_init[policy_id] = p_state_init
             action_dict[group_id].append(a_action)
 
     return action_dict

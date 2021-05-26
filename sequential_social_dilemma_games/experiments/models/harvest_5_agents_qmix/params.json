@@ -1,0 +1,57 @@
+{
+  "batch_mode": "complete_episodes",
+  "buffer_size": 1000,
+  "double_q": true,
+  "env": "grouped_harvest",
+  "env_config": {
+    "num_agents": 5
+  },
+  "evaluation_config": {
+    "explore": false
+  },
+  "evaluation_interval": null,
+  "evaluation_num_episodes": 10,
+  "exploration_config": {
+    "epsilon_timesteps": 50000,
+    "final_epsilon": 0.05,
+    "initial_epsilon": 1.0,
+    "type": "EpsilonGreedy"
+  },
+  "framework": "torch",
+  "grad_norm_clipping": 10,
+  "horizon": 1000,
+  "learning_starts": 1000,
+  "lr": 0.0005,
+  "min_iter_time_s": 1,
+  "mixer": "vdn",
+  "mixing_embed_dim": 32,
+  "model": {
+    "conv_filters": [
+      [
+        6,
+        [
+          3,
+          3
+        ],
+        1
+      ]
+    ],
+    "lstm_cell_size": 64,
+    "post_fcnet_activation": null,
+    "post_fcnet_hiddens": [
+      32,
+      32
+    ]
+  },
+  "num_envs_per_worker": 10,
+  "num_gpus": 1,
+  "num_workers": 0,
+  "optim_alpha": 0.99,
+  "optim_eps": 1e-05,
+  "per_worker_exploration": false,
+  "rollout_fragment_length": 4,
+  "target_network_update_freq": 500,
+  "timesteps_per_iteration": 1000,
+  "train_batch_size": 32,
+  "worker_side_prioritization": false
+}
