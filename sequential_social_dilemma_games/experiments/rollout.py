@@ -12,14 +12,19 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 import utility_funcs
 from ray.cloudpickle import cloudpickle
 from ray.rllib.agents.registry import get_agent_class
-from ray.rllib.evaluation.sample_batch import DEFAULT_POLICY_ID
+from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
 from models.conv_to_fc_net import ConvToFCNet
 
+from gym.spaces import Tuple
+from social_dilemmas.envs.harvest import HarvestEnv
 # from ray.rllib.evaluation.sampler import clip_action
 
+def env_creator(env_config=None):
+    num_agents = env_config["num_agents"]
+    return HarvestEnv(num_agents=num_agents)
 
 def get_rllib_config(path):
     """Return the data from the specified rllib configuration file."""
@@ -51,10 +56,18 @@ def load_agent_config(args):
     else:
         multiagent = False
 
+    single_env = env_creator(pkl['env_config'])
+    env_name = pkl['env']
     # Create and register a gym+rllib env
-    env_creator = pkl['env_config']['func_create']
-    env_name = config['env_config']['env_name']
-    register_env(env_name, env_creator.func)
+    obs_space = Tuple(
+            [single_env.observation_space for _ in range(single_env.num_agents)])
+    act_space = Tuple([single_env.action_space
+                          for _ in range(single_env.num_agents)])
+    
+    grouping = {"group_1": [
+            f"agent-{i}" for i in range(single_env.num_agents)]}
+
+    register_env(env_name, lambda env_config: env_creator(env_config).with_agent_groups(grouping, obs_space=obs_space, act_space=act_space))
 
     ModelCatalog.register_custom_model("conv_to_fc_net", ConvToFCNet)
 
@@ -106,10 +119,8 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
                         for i in range(config["horizon"])]
 
         multiagent = isinstance(env, MultiAgentEnv)
-        if agent.workers.local_worker().multiagent:
-            policy_agent_mapping = agent.config["multiagent"][
-                "policy_mapping_fn"]
-            mapping_cache = {}
+        policy_agent_mapping = agent.config["multiagent"]["policy_mapping_fn"] if agent.workers.local_worker().multiagent else None
+        mapping_cache = {}
         policy_map = agent.workers.local_worker().policy_map
         state_init = {p: m.get_initial_state() for p, m in policy_map.items()}
         use_lstm = {p: len(s) > 0 for p, s in state_init.items()}
@@ -129,6 +140,7 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
         steps = 0
 
         state = env.reset()
+
         done = False
         reward_total = 0.0
         while not done and steps < (config['horizon'] or steps + 1):
@@ -196,12 +208,12 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
 
 def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, agents_active, algo):
     "Take agents actions"
-    action_dict = {}
-    agent_ids = [agent_id for agent_id in state.keys()]
-    for agent_id in agents_active:
-        a_state = state[agent_id]
+    group_id =  list(state.keys())[0]
+    action_dict = {} if algo != "QMIX" else {group_id: []}
+    for i, agent_id in enumerate(agents_active):
+        a_state = state[agent_id] if algo != "QMIX" else state[group_id]
         if a_state is not None:
-            if algo is not "QMIX":
+            if algo != "QMIX":
                 policy_id = mapping_cache.setdefault(
                     agent_id, policy_agent_mapping(agent_id))
                 p_use_lstm = use_lstm[policy_id]
@@ -217,7 +229,8 @@ def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping
             else:
                 a_action = agent.compute_action(
                         a_state)
-            action_dict[agent_id] = a_action
+               
+            action_dict[group_id].append(a_action)
 
     return action_dict
 
