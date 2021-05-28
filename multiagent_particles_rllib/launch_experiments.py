@@ -2,14 +2,15 @@ import subprocess
 import os
 
 
-def save_rewards(N, M, folder_name, checkpoints, missing_agents_behaviours):
+def save_rewards(N, M, folder_name, checkpoints, missing_agents_behaviours, agent_speeds):
     processes = []
     for checkpoint_i, checkpoint in enumerate(checkpoints):
         for n in range(N):
             for behaviour in missing_agents_behaviours:
-                fname = f"{folder_name}/{folder_name}_model_{checkpoint_i}/model_{checkpoint_i}_{behaviour}_{n}.csv"
+                save_dir = "{folder_name}/{folder_name}_model_{checkpoint_i}"
+                fname = f"{save_dir}/model_{checkpoint_i}_{behaviour}_{n}_speeds={str(agent_speeds)}.csv"
                 if not os.path.exists(fname):
-                    command = f'python run_sv.py {checkpoint} --run PPO --missing-agents-behaviour {behaviour} --exp-name model_{checkpoint_i}_{behaviour}_{n} --save-dir {folder_name}/{folder_name}_model_{checkpoint_i} --shapley-M {M}'
+                    command = f'python run_sv.py {checkpoint} --run PPO --agent_speeds {agent_speeds} --missing-agents-behaviour {behaviour} --exp-name model_{checkpoint_i}_{behaviour}_{n} --save-dir {save_dir} --shapley-M {M}'
                     processes.append(subprocess.Popen(command, shell=True))
                 else:
                     print("File already exists!!")
@@ -27,5 +28,10 @@ if __name__ == "__main__":
     ]
     missing_agents_behaviours = ["idle", "random", "random_player_action"]
 
+    agent_speeds = [1.3, 1.0, 1.0, 1.0]
     save_rewards(N=1, M=1000, folder_name="rewards", checkpoints=checkpoints,
-                 missing_agents_behaviours=missing_agents_behaviours)
+                 missing_agents_behaviours=missing_agents_behaviours, agent_speeds=agent_speeds)
+
+    agent_speeds = [1.3, 0.2, 0.8, 2.0]
+    save_rewards(N=1, M=1000, folder_name="rewards", checkpoints=checkpoints,
+                 missing_agents_behaviours=missing_agents_behaviours, agent_speeds=agent_speeds)
