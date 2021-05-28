@@ -31,16 +31,21 @@ def compute_coalitions_with_player(player_id, players_ids):
     return coalitions_with_player
 
 
-def monte_carlo_shapley_values(args, agent, config, n_players):
+def monte_carlo_shapley_values(args, agent, config):
     """
     Monte Carlo estimation of shapley values (if k = num_episodes*n_random_coalitions, o(k*n_agents) complexity).
     """
 
-    print("Starting Shapley value estimation on:", n_players,
+    env = agent.workers.local_worker().env
+    players_ids = [
+        agent_name for agent_name in env.agents if agent_name.startswith("adversary")]
+
+    n_players = len(players_ids)
+    print("Starting Shapley value estimation on:", n_players, "players",
           " n_random_coalitions=", args.shapley_M, " missing agents behaviour=", args.missing_agents_behaviour)
 
     shapley_values = []
-    players_ids = [f"adversary_{i}" for i in range(n_players)]
+
     for player_id in players_ids:
         print(f"Starting computation for player {player_id}...")
         # Get all possible combinations with and without the current player
@@ -52,18 +57,21 @@ def monte_carlo_shapley_values(args, agent, config, n_players):
             coalition_with_player = random.choice(coalitions_with_player)
             coalition_without_player = [
                 n for n in coalition_with_player if n != player_id]
-            print(
-                f"Coalition {m}/{args.shapley_M}: {coalition_with_player}")
+            # print(
+            #     f"Coalition {m}/{args.shapley_M}: {coalition_with_player}")
 
             # Simulate num_episodes episodes on selected coalitions with and without current player
-            reward_with_player = rollout(args, agent, config, 1, player_id, coalition_with_player)
+            reward_with_player = rollout(
+                args, agent, config, 1, player_id, coalition_with_player)
             reward_without_player = rollout(
                 args, agent, config, 1, player_id, coalition_without_player)
 
-            save_rollout_info(args, player_id, m, reward_with_player, reward_without_player)
+            save_rollout_info(args, player_id, m,
+                              reward_with_player, reward_without_player)
 
             # Compute estimated marginal contribution
-            marginal_contribution = reward_with_player[0] - reward_without_player[0]
+            marginal_contribution = reward_with_player[0] - \
+                reward_without_player[0]
             marginal_contributions.append(marginal_contribution)
 
         # Compute shapley value as the mean of marginal contributions

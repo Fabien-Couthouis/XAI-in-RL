@@ -1,10 +1,14 @@
+from __future__ import absolute_import
+
+import argparse
+
 import ray
 import supersuit
-from pettingzoo.mpe import simple_tag_v2
 from ray import tune
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
 from ray.tune.registry import register_env
-import argparse
+
+import simple_tag_v2_custom as simple_tag_v2
 
 
 def create_parser():
@@ -101,13 +105,11 @@ def get_ppo_config(policies):
     }
 
 
-
 def gen_policies(obs_space, act_space, agents):
     'Generate policies dict {policy_name: (policy_type, obs_space, act_space, {"agent_id": i})}'
     policies = {agent_id:  (None, obs_space, act_space, {})
                 for agent_id in agents}
     return policies
-
 
 
 # def gen_policies_maddpg(obs_space, act_space, agents):
@@ -123,43 +125,41 @@ def gen_policies(obs_space, act_space, agents):
 #         for agent_id in agents}
 #     return policies
 
-
 if __name__ == "__main__":
+    from ray.tune.registry import get_trainable_cls
     parser = create_parser()
     args = parser.parse_args()
 
     ray.init()
     register_env("prey_predator", env_creator)
+
     config = {
         "num_workers": 4,
         "num_envs_per_worker": 10,
         "env": "prey_predator",
     }
 
-
     # Get obs/act spaces to feed the policy with
     single_env = env_creator()
     obs_space = single_env.observation_space
     act_space = single_env.action_space
     agents = single_env.agents
-    print(agents)
+
     single_env.close()
+    policies = gen_policies(obs_space, act_space, agents)
 
-    # policies = gen_policies(obs_space, act_space,agents)
+    if args.run.upper() == "PPO":
+        algo_config = get_ppo_config(policies)
 
-    # if args.run.upper() == "PPO":
-    #     algo_config = get_ppo_config(policies)
-    # # elif args.run.upper() == "MADDPG":
-    # #     policies = gen_policies_maddpg(obs_space, act_space,agents)
-    # #     algo_config = get_maddpg_config(policies)
+    # elif args.run.upper() == "MADDPG":
+    #     policies = gen_policies_maddpg(obs_space, act_space,agents)
+    #     algo_config = get_maddpg_config(policies)
 
-
-    # tune.run(
-    #     args.run,
-    #     num_samples=5,
-    #     stop={"time_total_s": 42000},
-    #     config=dict(config, **algo_config),
-    #     checkpoint_freq=args.checkpoint_freq,
-    #     local_dir=args.result_dir
-    # )
-
+    tune.run(
+        args.run,
+        num_samples=5,
+        stop={"time_total_s": 42000},
+        config=dict(config, **algo_config),
+        checkpoint_freq=args.checkpoint_freq,
+        local_dir=args.result_dir
+    )

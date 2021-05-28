@@ -1,22 +1,26 @@
+from __future__ import absolute_import
+
 import copy
 import csv
 import json
 import os
 import random
-import shutil
-import sys
 from time import time
-from train import env_creator
+
 import numpy as np
-import ray
 from ray.cloudpickle import cloudpickle
+from ray.rllib import env
 from ray.rllib.agents.registry import get_agent_class, get_trainer_class
+from ray.rllib.env import MultiAgentEnv
+from ray.rllib.evaluation.worker_set import WorkerSet
 from ray.rllib.models import ModelCatalog
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from ray.tune.registry import get_trainable_cls, register_env
 from ray.tune.utils import merge_dicts
-from ray.rllib.evaluation.worker_set import WorkerSet
-from ray.rllib.env import MultiAgentEnv
+
+from train import env_creator
+
+
 def load_agent_config(args):
     # Load configuration from checkpoint file.
     config_path = ""
@@ -61,20 +65,24 @@ def load_agent_config(args):
         args.env = config.get("env")
 
     # Make sure we have evaluation workers.
-    print("NUM WORKERS",config["num_workers"])
     # if not config.get("evaluation_num_workers"):
     #     config["evaluation_num_workers"] = config.get("num_workers", 0)
     if not config.get("evaluation_num_episodes"):
         config["evaluation_num_episodes"] = 1
-    config["render_env"] = not args.no_render
+    config["render_env"] = args.render
     config["record_env"] = args.video_dir
 
-    register_env(args.env,env_creator)
+    if config.get("env_config") is None:
+        config["env_config"] = {}
+
+    print(args.agent_speeds)
+    config["env_config"]["agent_speeds"] = args.agent_speeds
+
+    register_env(args.env, env_creator)
 
     # Create the Trainer from config.
     cls = get_trainable_cls(args.run)
     agent = cls(env=args.env, config=config)
-
 
     # Load state from checkpoint, if provided.
     if args.checkpoint:
@@ -82,7 +90,9 @@ def load_agent_config(args):
 
     return agent, config
 
+
 def rollout(args, agent, config, num_episodes, considered_player=None, coalition=None):
+
     if hasattr(agent, "workers") and isinstance(agent.workers, WorkerSet):
         env = agent.workers.local_worker().env
 
@@ -91,7 +101,7 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
             policy_agent_mapping = agent.config["multiagent"][
                 "policy_mapping_fn"]
             mapping_cache = {}
-            
+
         policy_map = agent.workers.local_worker().policy_map
         state_init = {p: m.get_initial_state() for p, m in policy_map.items()}
         use_lstm = {p: len(s) > 0 for p, s in state_init.items()}
@@ -100,24 +110,32 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
         multiagent = False
         use_lstm = {DEFAULT_POLICY_ID: False}
 
-
-    agents_active = [f"adversary_{i}" for i in range(args.agents_active)]
+    agents_active = [
+        agent_name for agent_name in env.agents if agent_name.startswith("adversary")]
 
     # Rollout
     episode = 0
     rewards_list = []
     while episode < num_episodes:
         steps = 0
-
         state = env.reset()
+
         done = False
         reward_total = 0.0
         max_steps = 50
+
+        if args.shapley_M is not None:
+            last_players_actions = {
+                agent_name: 0 for agent_name in agents_active}
         while not done and steps < max_steps:
+            if args.render:
+                env.render()
             if multiagent:
                 if args.shapley_M is not None:
                     action = take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm,
-                                                        policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour, agents_active)
+                                                        policy_agent_mapping, state_init, coalition, args.missing_agents_behaviour, agents_active, last_players_actions)
+                    for agent_id, agent_action in action.items():
+                        last_players_actions[agent_id] = agent_action
                 else:
                     action = take_action(env, agent, state, mapping_cache, use_lstm,
                                          policy_agent_mapping, state_init, agents_active)
@@ -148,8 +166,6 @@ def rollout(args, agent, config, num_episodes, considered_player=None, coalition
 
         episode += 1
         rewards_list.append(reward_total)
-
-
     return rewards_list
 
 
@@ -177,7 +193,7 @@ def take_action(env, agent, state, mapping_cache, use_lstm, policy_agent_mapping
     return action_dict
 
 
-def take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, coalition, missing_agents_behaviour, agents_active):
+def take_actions_for_coalition(env, agent, considered_player, state, mapping_cache, use_lstm, policy_agent_mapping, state_init, coalition, missing_agents_behaviour, agents_active, last_players_actions):
     'Return actions where each agent in coalition follow the policy, others play at random if replace_missing_players=="random" or do not move if replace_missing_players=="idle'
     actions = take_action(env, agent, state, mapping_cache,
                           use_lstm, policy_agent_mapping, state_init, agents_active)
@@ -185,14 +201,15 @@ def take_actions_for_coalition(env, agent, considered_player, state, mapping_cac
         return actions
 
     actions_for_coalition = actions.copy()
-    agents_without_player = [agent_id for agent_id in actions.keys() if agent_id !=
-                             considered_player]
+
     for agent_id in actions.keys():
         if agent_id not in coalition:
             if missing_agents_behaviour == "random_player_action":
                 # Action from another random player
+                agents_without_player = [agent_id for agent_id in last_players_actions.keys() if agent_id !=
+                                         considered_player]
                 random_player = random.choice(agents_without_player)
-                action = actions[random_player]
+                action = last_players_actions[random_player]
 
             elif missing_agents_behaviour == "random":
                 # Random action

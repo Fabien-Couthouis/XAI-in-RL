@@ -1,11 +1,12 @@
+from __future__ import absolute_import
 
 import argparse
+import json
+
 import ray
 
-from rollout import rollout, load_agent_config
+from rollout import load_agent_config, rollout
 from shapley_values import monte_carlo_shapley_values
-
-import json
 
 
 def create_parser(parser_creator=None):
@@ -19,7 +20,7 @@ def create_parser(parser_creator=None):
         "checkpoint",
         type=str,
         nargs="?",
-        help="(Optional) checkpoint from which to roll out. "
+        help="Checkpoint from which to roll out. "
         "If none given, will use an initial (untrained) Trainer.")
 
     required_named = parser.add_argument_group("required named arguments")
@@ -42,11 +43,9 @@ def create_parser(parser_creator=None):
         action="store_true",
         help="Run ray in local mode for easier debugging.")
     parser.add_argument(
-        "--no-render",
-        default=False,
-        action="store_const",
-        const=True,
-        help="Suppress rendering of the environment.")
+        "--render",
+        action="store_true",
+        help="Enable rendering of the environment.")
     parser.add_argument(
         "--video-dir",
         type=str,
@@ -61,7 +60,7 @@ def create_parser(parser_creator=None):
         "limitation on the number of timesteps run.")
     parser.add_argument(
         "--episodes",
-        default=0,
+        default=10,
         help="Number of complete episodes to roll out. Rollout will also stop "
         "if `--steps` (timesteps) limit is reached first. A value of 0 means "
         "no limitation on the number of episodes run.")
@@ -93,12 +92,6 @@ def create_parser(parser_creator=None):
         "after each episode). An output filename must be set using --out; "
         "the progress file will live in the same folder.")
 
-   
-    parser.add_argument(
-        '--num-rollouts',
-        type=int,
-        default=1,
-        help='The number of rollouts to visualize.')
     parser.add_argument("--shapley-M", type=int, default=None,
                         help="compute or not shapley values with given number of simulation episodes (M)")
     parser.add_argument("--missing-agents-behaviour", type=str, default="random_player_action",
@@ -108,11 +101,10 @@ def create_parser(parser_creator=None):
     parser.add_argument("--save-dir", type=str, default="logs",
                         help="directory in which shapley logs should be saved")
     parser.add_argument(
-        "--agents-active", type=int, default=3, help='number of active agents'
-    )
-    parser.add_argument(
         "--social-metrics", action='store_true',
         help='whether to save rewards to compute social metrics')
+    parser.add_argument(
+        "--agent-speeds", type=float, nargs="+", default=None, help="Speed of agents (first are adversaries)")
     return parser
 
 
@@ -123,7 +115,9 @@ if __name__ == '__main__':
     agent, config = load_agent_config(args)
 
     if args.shapley_M is not None:
-        monte_carlo_shapley_values(args, agent, config, args.agents_active)
+        print("Compute Shapley values")
+        monte_carlo_shapley_values(args, agent, config)
 
     else:
-        rollout(args, agent, config, args.num_rollouts)
+        print('Rollout')
+        rollout(args, agent, config, args.episodes)
