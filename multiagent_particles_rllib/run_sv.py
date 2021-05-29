@@ -20,7 +20,7 @@ def create_parser(parser_creator=None):
         "checkpoint",
         type=str,
         nargs="?",
-        help="Checkpoint from which to roll out. "
+        help="Checkpoint dir from which to roll out. "
         "If none given, will use an initial (untrained) Trainer.")
 
     required_named = parser.add_argument_group("required named arguments")
