@@ -21,7 +21,7 @@ def create_parser():
 
     # required input parameters
     parser.add_argument(
-        'result_dir', type=str, help='Directory containing results of experiments')
+        '--result_dir', default="rewards/exp2", type=str, help='Directory containing results of experiments')
 
     # optional input parameters
     parser.add_argument(
@@ -39,8 +39,13 @@ def create_parser():
 def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
     'Plot barchart: agent with corresponding shapley value'
     fig, ax = plt.subplots()
+
+    print('shapley_values', shapley_values)
+
+    print('shapley_values 3', shapley_values.iloc[3])
+
     data_df = pd.DataFrame(
-        {agent_names[i]: [shapley_values[i]] for i in range(len(shapley_values))})
+        {agent_names[i % len(agent_names)]: [shapley_values.iloc[i]] for i in range(len(shapley_values))})
     ax = sns.barplot(data=data_df, orient="h")
 
     ax.set_title("Shapley value for each agent",
@@ -79,8 +84,10 @@ def plot_model_rewards_pp(folder_path: str, num_good_agents: int, num_preys: int
 # def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
 def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
     # fig, ax = plt.subplots()
+    pname = {0: "Predator 0\n(slow)",
+             1: "Predator 1\n(medium)", 2: "Predator 2\n(fast)"}
     data = {
-        'Player': [f"Predator {name}" for name in player_names],
+        'Player': [pname[name] for name in player_names],
         'Shapley value': shapley_values,
         'Method_idx': methods,
         'Method': methods.copy()
@@ -93,6 +100,7 @@ def cat_plot(player_names: List[str], shapley_values: List[float], methods: List
     g.set(xticks=[])
     g.set(xlabel='')
     g.set(ylim=(-5, 20))
+
     axes = g.axes.flatten()
     player_names = sorted(list(set(data['Player'])))
     for ax, player_name in zip(axes, player_names):
@@ -169,10 +177,23 @@ def load_cat_plot_data_pp(path: str, M: int = None):
                 shapley_values.append(shapley_value)
 
     methods_list = ["noop" if m == "idle" else m for m in methods_list]
+    methods_list = ["replace" if m ==
+                    "random_player" else m for m in methods_list]
     for i in range(len(methods_list)):
+
         methods_list[i] += " (MC estimation)"
 
-    return player_names_list, shapley_values, methods_list, run_list
+    data_df = pd.DataFrame({
+        'Player': player_names_list,
+        'Shapley value': shapley_values,
+        'Method_idx': methods_list,
+        'Method': methods_list.copy(),
+        'Run': run_list
+    })
+
+    data = player_names_list, shapley_values, methods_list, run_list
+
+    return data, data_df
 
 
 def load_cat_plot_data_pp_true(path: str):
@@ -210,6 +231,7 @@ def load_cat_plot_data_pp_true(path: str):
     for i in range(len(methods_list)):
         methods_list[i] += " (real)"
         methods_list[i] = methods_list[i].replace("idle", "noop")
+        methods_list[i] = methods_list[i].replace("random_player", "replace")
     return players_list, shapley_values, methods_list
 
 
@@ -227,7 +249,7 @@ def plot_goal_agents_pp(folder_path: str, agent_names: List[str]):
     # ax.set_title("Statistics for each agent",
     #              BARCHAR_TEXTPROPS)
     ax.set(xlabel="Number of times the prey get caught")
-    ax.set(ylabel="Agent")
+    ax.set(ylabel="Agent name")
 
     fig.tight_layout()
     return fig, ax
@@ -246,8 +268,10 @@ def plot_goal_agents_pp_one(folder_path: str, agent_names: List[str]):
 
     ax = sns.barplot(x="value", y="index", data=df_sum, palette="husl",
                      orient="h", order=agent_names, estimator=sum)
-    ax.set(xlabel="Number of times the prey get caught")
-    ax.set(ylabel="Agent")
+
+    ax.set_xlabel("Number of times the prey get caught",
+                  BARCHAR_TEXTPROPS)
+    ax.set_ylabel('Agent names', BARCHAR_TEXTPROPS)
 
     fig.tight_layout()
     return fig, ax
@@ -292,7 +316,6 @@ def plot_shapley_vs_speed(path: str, agent_id: int):
         'Shapley_value': data[1],
         'Run': data[3]
     })
-    print(data_df)
     data_df = data_df[data_df["Player_id"] == agent_id]
     # *len(set(data[3])) to fit the nb of runs
     data_df["Speed"] = speeds*len(set(data[3]))
@@ -314,30 +337,37 @@ def plot_shapley_vs_speed(path: str, agent_id: int):
 if __name__ == "__main__":
     args = create_parser()
     args = args.parse_args()
-    agent_names = [f"Predator {i}" for i in range(args.num_agents)]
-    path_pp_mc = args.result_dir  # r"rewards/exp1"
-    path_pp_mc_true = r"rewards/true-shap-exp1"
+    # agent_names = [f"Predator {i}" for i in range(args.num_agents)]
+    agent_names = [
+        "Predator 0\n(slow)", "Predator 1\n(medium)", "Predator 2\n(fast)"]
+    path_pp_mc = r"rewards/exp2"
+    path_pp_mc_true = r"rewards/true-shap-exp2"
 
-    data = load_cat_plot_data_pp(path_pp_mc)
+    data, data_df = load_cat_plot_data_pp(path_pp_mc)
+    # print(data)
 
     if args.plot_type == "shapley_barchart":
-        shapley_values = data[1]
-        plot_shap_barchart(shapley_values[0:9], agent_names)  # NOOP
-        plot_shap_barchart(shapley_values[9:18], agent_names)
-        plot_shap_barchart(shapley_values[18:27], agent_names)
+
+        # plot_shap_barchart(data_df[data_df['Method'] == 'noop (MC estimation)']
+        #                    ['Shapley value'], agent_names)
+        # plot_shap_barchart(data_df[data_df['Method'] == 'random (MC estimation)']
+        #                    ['Shapley value'], agent_names)
+        plot_shap_barchart(data_df[data_df['Method'] == 'replace (MC estimation)']
+                           ['Shapley value'], agent_names)
     elif args.plot_type == "shapley_cat_plot":
-        cat_plot(*data)
+        cat_plot(data[0], data[1], data[2])
     elif args.plot_type == "shapley_true":
         data_true = load_cat_plot_data_pp_true(path_pp_mc_true)
 
         # # Add true shapley value to MC approximation
         for i in range(len(data_true)):
             data[i].extend(data_true[i])
-        cat_plot(*data)
+
+        cat_plot(data[0], data[1], data[2])
     elif args.plot_type == "shapley_speed":
         plot_shapley_vs_speed("rewards/exp2-speeds-chart", 0)
     elif args.plot_type == "goal_agents":
-        plot_goal_agents_pp(r"goal_agents/exp2", agent_names)
+        # plot_goal_agents_pp_one(r"goal_agents/exp2", agent_names)
         plot_goal_agents_pp_one(r"goal_agents/exp1", agent_names)
     elif args.plot_type == "model_rewards":
         plot_model_rewards_pp(

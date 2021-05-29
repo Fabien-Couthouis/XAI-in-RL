@@ -50,9 +50,11 @@ def plot_shap_barchart(shapley_values: List[float], agent_names: List[str]):
     fig.tight_layout()
     return fig, ax
 
+
 def efficiency(returns: List[float], num_agents: int):
     'Efficiency over the episodes'
     return (np.sum(returns)/num_agents)/len(returns)
+
 
 def equality(returns: List[float], num_agents: int):
     'Equality over the episodes'
@@ -69,9 +71,11 @@ def equality(returns: List[float], num_agents: int):
         equalities.append(equality)
     return np.mean(equalities)
 
+
 def sustainability(tr_lst: List[float], num_agents: int):
     'Sustainability over the episodes'
     return np.sum(np.mean(tr_lst, axis=0), axis=-1)/num_agents
+
 
 def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, mean_returns, ckpts):
     'Plot barchart: agent with corresponding shapley value'
@@ -125,7 +129,7 @@ def plot_sm_shap_linechart(data_df, efficiencies, equalities, sustainabilities, 
 
     fig, ax = plt.subplots()
     ax = sns.lineplot(data=df_efficiency, x='Episode', y='Value',
-                        ci="sd")
+                      ci="sd")
     ax.set_xlabel("Episode",
                   BARCHAR_TEXTPROPS)
     ax.set_ylabel('Efficiency', BARCHAR_TEXTPROPS)
@@ -172,8 +176,9 @@ def plot_model_rewards(file_path: str):
 # def cat_plot(shapley_values: List[List[float]], agent_names: List[str], method_names: List[str]):
 # def cat_plot(player_names: List[str], shapley_values: List[float], methods: List[str]):
 def cat_plot(data_df):
+    print(data_df)
     fig, ax = plt.subplots()
-    g = sns.catplot(x="Method_idx", y="Shapley value", height=4, aspect=.35, hue="Method_idx",
+    g = sns.catplot(x="Method_idx", y="Shapley value", height=4, aspect=.35, hue="Method",
                     data=data_df, dodge=True,  col="Player", kind="swarm")
 
     g.set(xticks=[])
@@ -201,18 +206,21 @@ def compute_shapley_value(rewards_with: np.ndarray, rewards_without: np.ndarray)
 
     return shapley_value
 
+
 def compute_shapley_value_social_metric(rewards_with: np.ndarray, rewards_without: np.ndarray, social_metric: str, num_agents: int):
     assert social_metric in ["efficiency", "equality", "sustainability"]
-    
+
     if social_metric == "efficiency":
-        shapley_value = efficiency(rewards_with, num_agents) - efficiency(rewards_without, num_agents)
+        shapley_value = efficiency(rewards_with, num_agents) - \
+            efficiency(rewards_without, num_agents)
     elif social_metric == "equality":
         shapley_value = equality(rewards_with, num_agents) - equality(rewards_without, num_agents)
     else:
         pass
         #TODO: "sustainability"
-    
+
     return shapley_value.mean()
+
 
 def load_cat_plot_data(path: str):
     all_files = [p for p in Path(path).rglob('*.csv')]
@@ -248,6 +256,8 @@ def load_cat_plot_data(path: str):
                 shapley_values.append(shapley_value)
 
     methods_list = ["noop" if m == "idle" else m for m in methods_list]
+    methods_list = ["replace" if m ==
+                    "random_player_action" else m for m in methods_list]
     data = {
         'Player': player_names_list,
         'Shapley value': shapley_values,
@@ -284,7 +294,7 @@ def load_social_metrics(paths: str, ckpts: List[int], num_agents: int = 5):
 
         for path in paths:
             df = pd.read_csv(f'{path}/social_metrics_ckpt_{ckpt}.csv', sep=',', names=['episode', 'tr'] +
-                            [f'reward_{agent_id}' for agent_id in range(num_agents)]).astype('float32')
+                             [f'reward_{agent_id}' for agent_id in range(num_agents)]).astype('float32')
 
             n_episodes = int(max(df['episode'].values))+1
             returns = [compute_returns(episode) for episode in range(n_episodes)]
@@ -328,7 +338,8 @@ if __name__ == "__main__":
     elif args.plot_type == "model_rewards":
         plot_model_rewards(args.model_location)
     elif args.plot_type == "social_metrics":
-        plot_social_metrics(data, ['social_metrics', 'social_metrics2', 'social_metrics3', 'social_metrics4'], range(1000, 9000, 1000))
+        plot_social_metrics(data, ['social_metrics', 'social_metrics2',
+                            'social_metrics3', 'social_metrics4'], range(1000, 9000, 1000))
 
     else:
         raise Exception("Unknown plot type")
