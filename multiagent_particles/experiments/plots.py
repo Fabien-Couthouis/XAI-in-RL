@@ -310,7 +310,7 @@ def plot_shapley_vs_speed(path: str, agent_id: int):
     speeds = []
     for speed_a1 in range(0, 22, 2):
         speeds.append(speed_a1/10)
-
+        
     data_df = pd.DataFrame({
         'Player_id': [player_id for player_id in data[0]],
         'Shapley_value': data[1],
