@@ -24,7 +24,7 @@ Markdown==3.0.1
 matplotlib==3.0.2
 more-itertools==5.0.0
 numpy==1.16.0
-opencv-python==4.0.0.21
+opencv-python==4.2.0.32
 pluggy==0.8.1
 protobuf==3.6.1
 psutil==5.5.0
