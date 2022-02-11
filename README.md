@@ -3,7 +3,7 @@
 ## About
 
 Explaining RL multiagent environments by computing Shapley values.
-This is the official implementation of [Collective eXplainable AI: Explaining Cooperative strategies and agent contribution in Multiagent Reinforcement Learning with Shapley Values](arxivlink). (TODO: add link to article)
+This is the official implementation of [Collective eXplainable AI: Explaining Cooperative strategies and agent contribution in Multiagent Reinforcement Learning with Shapley Values](https://ieeexplore.ieee.org/document/9679742) (available on [arxiv](https://arxiv.org/abs/2110.01307)). 
 
 Experiments were conducted for two environments: [Sequential Social Dilemmas](https://github.com/eugenevinitsky/sequential_social_dilemma_games) and [OpenAI's Multiagent Particle](https://github.com/openai/multiagent-particle-envs).
 The implementation for each environment is available in the corresponding subfolder.
@@ -86,7 +86,7 @@ Evolution of the Shapley values and social metrics from [Perolat et al.](https:/
 If you use our work in your article, please cite the following paper:
 
 ```bibtex
-
+@ARTICLE{9679742,  author={Heuillet, Alexandre and Couthouis, Fabien and Díaz-Rodríguez, Natalia},  journal={IEEE Computational Intelligence Magazine},   title={Collective eXplainable AI: Explaining Cooperative Strategies and Agent Contribution in Multiagent Reinforcement Learning With Shapley Values},   year={2022},  volume={17},  number={1},  pages={59-71},  doi={10.1109/MCI.2021.3129959}}
 ```
 
 
